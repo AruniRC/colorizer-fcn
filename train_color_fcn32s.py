@@ -4,13 +4,14 @@ import os
 import os.path as osp
 import shlex
 import subprocess
-
 import pytz
 import torch
 import yaml
+import numpy as np
+import matplotlib.pyplot as plt
 
-import fcn32s_color
-import trainer
+import models
+import train
 import utils
 import data_loader
 
@@ -113,7 +114,8 @@ def get_parameters(model, bias=False):
         nn.ReLU,
         nn.MaxPool2d,
         nn.Dropout2d,
-        nn.Sequential
+        nn.Sequential,
+        models.FCN32sColor
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
@@ -157,10 +159,7 @@ def main():
 
     torch.manual_seed(1337)
     if cuda:
-        torch.cuda.manual_seed(1337)
-
-        import pdb; pdb.set_trace()  # breakpoint bf168d7c //
-        
+        torch.cuda.manual_seed(1337)        
 
 
     # -----------------------------------------------------------------------------
@@ -172,7 +171,7 @@ def main():
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.ColorizeImageNet(root, split='train', \
+        data_loader.ColorizeImageNet(root, split='train', \
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, set='tiny'),
         batch_size=1, shuffle=False, **kwargs) # DEBUG: set shuffle False
 
@@ -183,16 +182,15 @@ def main():
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.ColorizeImageNet(root, split='val', \
+        data_loader.ColorizeImageNet(root, split='val', \
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, set='tiny'),
         batch_size=1, shuffle=False, **kwargs)
-
 
 
     # -----------------------------------------------------------------------------
     # 2. model
     # -----------------------------------------------------------------------------
-    model = torchfcn.models.FCN32sColor(
+    model = models.FCN32sColor(
                 n_class=args.numbins, bin_type=args.binning)
     start_epoch = 0
     start_iteration = 0
@@ -222,46 +220,46 @@ def main():
     if resume:
         optim.load_state_dict(checkpoint['optim_state_dict'])
 
+    import pdb; pdb.set_trace()  # breakpoint b846e377 //
+    
+
 
     # -----------------------------------------------------------------------------
     # Sanity-check: forward pass with a single sample
     # -----------------------------------------------------------------------------
-    dataiter = iter(val_loader)
-    img, label = dataiter.next()
+    # dataiter = iter(val_loader)
+    # img, label = dataiter.next()
 
-    if val_loader.dataset.bins == 'one-hot':
-        from torch.autograd import Variable
-        inputs = Variable(img)
-        if cuda:
-          inputs = inputs.cuda()
-        outputs = model(inputs)
-        assert len(outputs)==2, \
-            'Network should predict a 2-tuple: hue-map and chroma-map.'
-        hue_map = outputs[0]
-        chroma_map = outputs[1]
-        assert hue_map.size() == chroma_map.size(), \
-            'Outputs should have same dimensions.'
-        sz_h = hue_map.size()
-        sz_im = img.size()
-        assert sz_im[2]==sz_h[2] and sz_im[3]==sz_h[3], \
-            'Spatial dims should match for input and output.'
+    # if val_loader.dataset.bins == 'one-hot':
+    #     from torch.autograd import Variable
+    #     inputs = Variable(img)
+    #     if cuda:
+    #       inputs = inputs.cuda()
+    #     outputs = model(inputs)
+    #     assert len(outputs)==2, \
+    #         'Network should predict a 2-tuple: hue-map and chroma-map.'
+    #     hue_map = outputs[0]
+    #     chroma_map = outputs[1]
+    #     assert hue_map.size() == chroma_map.size(), \
+    #         'Outputs should have same dimensions.'
+    #     sz_h = hue_map.size()
+    #     sz_im = img.size()
+    #     assert sz_im[2]==sz_h[2] and sz_im[3]==sz_h[3], \
+    #         'Spatial dims should match for input and output.'
 
-    elif val_loader.dataset.bins == 'soft':
-        from torch.autograd import Variable
-        inputs = Variable(img)
-        if cuda:
-          inputs = inputs.cuda()
-        outputs = model(inputs)
+    # elif val_loader.dataset.bins == 'soft':
+    #     from torch.autograd import Variable
+    #     inputs = Variable(img)
+    #     if cuda:
+    #       inputs = inputs.cuda()
+    #     outputs = model(inputs)
         # TODO: assertions
-
-    import pdb; pdb.set_trace()  # breakpoint 28c358a0 //
-
 
 
     # -----------------------------------------------------------------------------
     # Training
     # -----------------------------------------------------------------------------
-    trainer = torchfcn.Trainer(
+    trainer = train.Trainer(
         cuda=cuda,
         model=model,
         optimizer=optim,

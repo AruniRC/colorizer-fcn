@@ -89,7 +89,7 @@ class ColorizeImageNet(data.Dataset):
         self.files = collections.defaultdict(list)
         self.num_hc_bins = num_hc_bins
         self.hc_bins = np.linspace(0,1,num=num_hc_bins) # Hue and chroma bins (fixed)
-        self.im_size = 400.0 # scale larger side of image to this value
+        self.im_size = 300.0 # scale larger side of image to this value
         self.bins = bins
         self.set = set
         self.gmm = []
@@ -273,7 +273,6 @@ class ColorizeImageNet(data.Dataset):
                 imfn.append(osp.join(self.root, line.strip()))
 
         num_images = np.min([num_images, len(imfn)])
-        # assert len(imfn) > num_images
         if num_images < 100:
             pixel_subset = 1000
 
@@ -284,10 +283,8 @@ class ColorizeImageNet(data.Dataset):
         print 'sampling pixels for Hue and Chroma . . . \r'
         for img_file in imfn_subset:
             im = PIL.Image.open(img_file)
-
             if len(im.getbands()) != 3:
                 continue
-
             im = np.array(im, dtype=np.uint8)
             im_h, im_c, _ = self.rgb_to_hue_chroma(im)
             im_h = im_h.flatten()

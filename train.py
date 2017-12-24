@@ -14,7 +14,9 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import tqdm
 
+import utils
 # import torchfcn
+import gc
 
 
 
@@ -155,6 +157,7 @@ class Trainer(object):
 
                 loss = loss_chroma + loss_hue
                 val_loss += float(loss.data[0]) / len(data)
+                del loss_hue, loss_chroma
 
             elif self.train_loader.dataset.bins == 'soft':
                 if self.cuda:
@@ -176,37 +179,37 @@ class Trainer(object):
                 lbl_true = lbl_true.data.cpu()
 
             lbl_pred = lbl_pred.squeeze()
-            lbl_true = lbl_true.squeeze()
-            lbl_true = lbl_true.numpy()
-
-            assert imgs.size()[0]==1   # HACK: assumes 1 image in a batch!
-            img = \
-                PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) # orig RGB image
-            img = self.val_loader.dataset.untransform(img)
+            lbl_true = np.squeeze(lbl_true.numpy())
             
             if len(visualizations) < 9:
-                    viz = fcn.utils.visualize_segmentation(
-                        lbl_pred=lbl_pred, lbl_true=lbl_true, img=img, n_class=n_class)
-                    visualizations.append(viz)
+                assert imgs.size()[0]==1   # HACK: assumes 1 image in a batch!
+                img = \
+                    PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
+                img = self.val_loader.dataset.untransform(img) # orig RGB image
+                viz = utils.visualize_segmentation(lbl_pred=lbl_pred,
+                        lbl_true=lbl_true, img=img, 
+                        im_l=np.squeeze(imgs.numpy()), n_class=n_class)
+                visualizations.append(viz)
 
             label_trues.append(lbl_true)
             label_preds.append(lbl_pred)
 
+            del lbl_true, lbl_pred, data, target, score, loss, imgs, viz
+
             if batch_idx > MAX_NUM:
                 break
-
-        # Computing metrics
-        metrics = torchfcn.utils.label_accuracy_score(
-            label_trues, label_preds, n_class)
 
         out = osp.join(self.out, 'visualization_viz')
         if not osp.exists(out):
             os.makedirs(out)
         out_file = osp.join(out, 'iter%012d.jpg' % self.iteration)
-        scipy.misc.imsave(out_file, fcn.utils.get_tile_image(visualizations))
+        scipy.misc.imsave(out_file, utils.get_tile_image(visualizations))
+        del visualizations
 
+        # Computing metrics
+        metrics = utils.label_accuracy_score(
+            label_trues, label_preds, n_class)
         val_loss /= len(self.val_loader)
-
         with open(osp.join(self.out, 'log.csv'), 'a') as f:
             elapsed_time = (
                 datetime.datetime.now(pytz.timezone('US/Eastern')) -
@@ -215,6 +218,9 @@ class Trainer(object):
                   [val_loss] + list(metrics) + [elapsed_time]
             log = map(str, log)
             f.write(','.join(log) + '\n')
+
+        del label_trues, label_preds, val_loss
+        gc.collect()
 
         mean_iu = metrics[2]
         is_best = mean_iu > self.best_mean_iu
@@ -252,9 +258,15 @@ class Trainer(object):
                 continue  # for resuming
             self.iteration = iteration
 
-            # DEBUG: comment validate
+            import pdb; pdb.set_trace()  # breakpoint bf36a5c6 //
+
+
+            # # DEBUG: comment validate
             if self.iteration % self.interval_validate == 0:
                 self.validate()
+
+            import pdb; pdb.set_trace()  # breakpoint d668838a //
+
 
             assert self.model.training
 
@@ -290,11 +302,14 @@ class Trainer(object):
                     data, target = data.cuda(), target.cuda()
                 data, target = Variable(data), Variable(target)
                 score = self.model(data)
-                loss = kl_div2d(score, target, size_average=self.size_average) # DEBUG: use MSE loss
+                loss = kl_div2d(score, target, size_average=self.size_average)
                 if np.isnan(float(loss.data[0])):
                     raise ValueError('loss is NaN while training')
 
             # print list(self.model.parameters())[0].grad
+
+            import pdb; pdb.set_trace()  # breakpoint 3029a73e //
+
 
             # SGD
             self.optim.zero_grad()
@@ -307,6 +322,7 @@ class Trainer(object):
             elif self.train_loader.dataset.bins == 'soft':
                  _, target_label = target.max(dim=3)
                  metrics = self.eval_metric(score, target_label, n_class)
+                 del target, score, target_label, data # free memory
 
             # Logging
             with open(osp.join(self.out, 'log.csv'), 'a') as f:
@@ -332,7 +348,7 @@ class Trainer(object):
         lbl_true = target.data.cpu().numpy()
         for lt, lp in zip(lbl_true, lbl_pred):
             acc, acc_cls, mean_iu, fwavacc = \
-                torchfcn.utils.label_accuracy_score(
+                utils.label_accuracy_score(
                     [lt], [lp], n_class=n_class)
             metrics.append((acc, acc_cls, mean_iu, fwavacc))
         metrics = np.mean(metrics, axis=0)
