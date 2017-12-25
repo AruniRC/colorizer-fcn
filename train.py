@@ -134,7 +134,7 @@ class Trainer(object):
         for batch_idx, (data, (target)) in tqdm.tqdm(
                 enumerate(self.val_loader), total=len(self.val_loader),
                 desc='Valid iteration=%d' % self.iteration, ncols=80,
-                leave=False):
+                leave=True):
 
             # Computing val losses
             if self.train_loader.dataset.bins == 'one-hot':
@@ -167,16 +167,20 @@ class Trainer(object):
                 loss = kl_div2d(score, target, size_average=self.size_average) # DEBUG: MSE loss
                 if np.isnan(float(loss.data[0])):
                     raise ValueError('loss is NaN while validation')
+                val_loss += float(loss.data[0]) / len(data)
 
             # Visualization
             imgs = data.data.cpu()
             if self.train_loader.dataset.bins == 'one-hot':
+                # visualize only hue predictions
                 lbl_pred = score_hue.data.max(1)[1].cpu().numpy()[:, :, :]
                 lbl_true = target_hue.data.cpu()
+                del score_hue, target_hue, score_chroma, target_chroma
             elif self.train_loader.dataset.bins == 'soft':
                 lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
-                _, lbl_true = target.max(dim=3)
-                lbl_true = lbl_true.data.cpu()
+                _, lbl_true = target.data.max(dim=3) # EDIT - .data
+                lbl_true = lbl_true.cpu()
+                del target, score
 
             lbl_pred = lbl_pred.squeeze()
             lbl_true = np.squeeze(lbl_true.numpy())
@@ -194,7 +198,7 @@ class Trainer(object):
             label_trues.append(lbl_true)
             label_preds.append(lbl_pred)
 
-            del lbl_true, lbl_pred, data, target, score, loss, imgs, viz
+            del lbl_true, lbl_pred, data, loss, imgs, viz
 
             if batch_idx > MAX_NUM:
                 break
@@ -258,15 +262,9 @@ class Trainer(object):
                 continue  # for resuming
             self.iteration = iteration
 
-            import pdb; pdb.set_trace()  # breakpoint bf36a5c6 //
-
-
             # # DEBUG: comment validate
             if self.iteration % self.interval_validate == 0:
                 self.validate()
-
-            import pdb; pdb.set_trace()  # breakpoint d668838a //
-
 
             assert self.model.training
 
@@ -295,6 +293,7 @@ class Trainer(object):
 
                 labmda_hue = 5
                 loss = loss_chroma + loss_hue # TODO - handle unstable hue
+                
 
             elif self.train_loader.dataset.bins == 'soft':
                 # soft targets as GMM posteriors over Hue/Chroma jointly
@@ -305,11 +304,7 @@ class Trainer(object):
                 loss = kl_div2d(score, target, size_average=self.size_average)
                 if np.isnan(float(loss.data[0])):
                     raise ValueError('loss is NaN while training')
-
             # print list(self.model.parameters())[0].grad
-
-            import pdb; pdb.set_trace()  # breakpoint 3029a73e //
-
 
             # SGD
             self.optim.zero_grad()
@@ -318,10 +313,12 @@ class Trainer(object):
 
             # Computing metrics
             if self.train_loader.dataset.bins == 'one-hot':
-                metrics = self.eval_metric(score_hue, target_hue, n_class)
+                metrics = self.eval_metric(score_hue.data, target_hue.data, n_class)
+                del score_hue, target_hue, target
+                del loss_chroma, loss_hue, score_chroma, target_chroma
             elif self.train_loader.dataset.bins == 'soft':
                  _, target_label = target.max(dim=3)
-                 metrics = self.eval_metric(score, target_label, n_class)
+                 metrics = self.eval_metric(score.data, target_label.data, n_class)
                  del target, score, target_label, data # free memory
 
             # Logging
@@ -344,8 +341,8 @@ class Trainer(object):
     def eval_metric(self, score, target, n_class):
     # -----------------------------------------------------------------------------
         metrics = []
-        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
-        lbl_true = target.data.cpu().numpy()
+        lbl_pred = score.max(1)[1].cpu().numpy()[:, :, :]
+        lbl_true = target.cpu().numpy()
         for lt, lp in zip(lbl_true, lbl_pred):
             acc, acc_cls, mean_iu, fwavacc = \
                 utils.label_accuracy_score(

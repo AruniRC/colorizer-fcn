@@ -89,7 +89,7 @@ class ColorizeImageNet(data.Dataset):
         self.files = collections.defaultdict(list)
         self.num_hc_bins = num_hc_bins
         self.hc_bins = np.linspace(0,1,num=num_hc_bins) # Hue and chroma bins (fixed)
-        self.im_size = 300.0 # scale larger side of image to this value
+        self.im_size = 500.0 # scale larger side of image to this value
         self.bins = bins
         self.set = set
         self.gmm = []
@@ -135,8 +135,6 @@ class ColorizeImageNet(data.Dataset):
                                       random_state=0, verbose=1)
                 gmm.fit(color_samples)
                 self.gmm = gmm
-                # np.save(osp.join(DEBUG_DIR, 'color-samples.npy'), color_samples)
-                # np.savez(osp.join(DEBUG_DIR, 'gmm-params.npz'), )
                 joblib.dump(gmm, gmm_path)
                 print 'done GMM fitting'
 
@@ -190,7 +188,6 @@ class ColorizeImageNet(data.Dataset):
         # Lightness channel (L) is the single-channel input to the network
         im_out = np.expand_dims(L, axis=0) # 1 x H x W
         im_out = torch.from_numpy(im_out).float()
-
         return im_out, hc_label
 
 
@@ -292,8 +289,9 @@ class ColorizeImageNet(data.Dataset):
             sel_pixel = np.random.randint(0, len(im_h), pixel_subset)
             hc_sample.append(np.stack((im_h[sel_pixel], im_c[sel_pixel]), 1))
 
-        print 'finished sampling.'
-        return np.concatenate(hc_sample, 0)
+        hc_sample = np.concatenate(hc_sample, 0)
+        print 'finished sampling: %d' % hc_sample.shape[0]
+        return hc_sample
 
 
 

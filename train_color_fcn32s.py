@@ -15,8 +15,6 @@ import train
 import utils
 import data_loader
 
-# import torchfcn
-
 
 configurations = {
     # same configuration as original work
@@ -74,10 +72,18 @@ configurations = {
 
     6: dict(
         max_iteration=10000,
-        lr=1.0e-3,     # changed learning rate
+        lr=1.0e-10,     # changed learning rate
         momentum=0.9,  # momentum lowered
         weight_decay=0.0005,
         interval_validate=10,
+    ),
+
+    7: dict(
+        max_iteration=10000,
+        lr=1.0e-8,     # changed learning rate
+        momentum=0.9,  # momentum lowered
+        weight_decay=0.0005,
+        interval_validate=50,
     )
 }
 
@@ -127,6 +133,12 @@ def get_parameters(model, bias=False):
             # weight is frozen because it is just a bilinear upsampling
             if bias:
                 assert m.bias is None
+        elif isinstance(m, nn.BatchNorm2d):
+            # TODO - check with BN examples if correct procedure!
+            if bias:
+                yield m.bias
+            else:
+                yield m.weight
         elif isinstance(m, modules_skipped):
             continue
         else:
@@ -159,7 +171,9 @@ def main():
 
     torch.manual_seed(1337)
     if cuda:
-        torch.cuda.manual_seed(1337)        
+        torch.cuda.manual_seed(1337)
+        torch.backends.cudnn.enabled = True
+        # torch.backends.cudnn.benchmark = True     
 
 
     # -----------------------------------------------------------------------------
@@ -220,40 +234,39 @@ def main():
     if resume:
         optim.load_state_dict(checkpoint['optim_state_dict'])
 
-    import pdb; pdb.set_trace()  # breakpoint b846e377 //
-    
-
 
     # -----------------------------------------------------------------------------
     # Sanity-check: forward pass with a single sample
     # -----------------------------------------------------------------------------
     # dataiter = iter(val_loader)
     # img, label = dataiter.next()
-
+    # model.eval()
     # if val_loader.dataset.bins == 'one-hot':
     #     from torch.autograd import Variable
     #     inputs = Variable(img)
     #     if cuda:
-    #       inputs = inputs.cuda()
+    #         inputs = inputs.cuda()
     #     outputs = model(inputs)
     #     assert len(outputs)==2, \
     #         'Network should predict a 2-tuple: hue-map and chroma-map.'
-    #     hue_map = outputs[0]
-    #     chroma_map = outputs[1]
+    #     hue_map = outputs[0].data
+    #     chroma_map = outputs[1].data
     #     assert hue_map.size() == chroma_map.size(), \
     #         'Outputs should have same dimensions.'
     #     sz_h = hue_map.size()
     #     sz_im = img.size()
     #     assert sz_im[2]==sz_h[2] and sz_im[3]==sz_h[3], \
     #         'Spatial dims should match for input and output.'
-
     # elif val_loader.dataset.bins == 'soft':
     #     from torch.autograd import Variable
     #     inputs = Variable(img)
     #     if cuda:
     #       inputs = inputs.cuda()
     #     outputs = model(inputs)
-        # TODO: assertions
+    #     # TODO: assertions
+    #     # del inputs, outputs
+    # model.train()
+
 
 
     # -----------------------------------------------------------------------------
