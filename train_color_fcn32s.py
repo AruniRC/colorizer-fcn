@@ -120,11 +120,6 @@ def main():
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, set='tiny'),
         batch_size=1, shuffle=False, **kwargs) # DEBUG: set shuffle False
 
-    # val_loader = torch.utils.data.DataLoader(
-    #     torchfcn.datasets.ColorizeImageNet(root, split='val', \
-    #     bins=args.binning, log_dir=out, num_hc_bins=args.numbins),
-    #     batch_size=1, shuffle=False, **kwargs) 
-
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', \
@@ -203,10 +198,11 @@ def main():
     #     from torch.autograd import Variable
     #     inputs = Variable(img)
     #     if cuda:
-    #       inputs = inputs.cuda()
+    #     	inputs = inputs.cuda()
     #     outputs = model(inputs)
     #     # TODO: assertions
     #     # del inputs, outputs
+
     # model.train()
 
 

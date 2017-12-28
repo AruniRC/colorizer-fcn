@@ -65,7 +65,7 @@ class ColorizeImageNet(data.Dataset):
     '''
 
     # -----------------------------------------------------------------------------
-    def __init__(self, root, log_dir = '.', split='train', set='small', \
+    def __init__(self, root, log_dir = '.', split='train', set='small',
                              num_hc_bins=32, bins='one-hot'):
     # -----------------------------------------------------------------------------
         '''
@@ -92,7 +92,7 @@ class ColorizeImageNet(data.Dataset):
         self.im_size = 500.0 # scale larger side of image to this value
         self.bins = bins
         self.set = set
-        self.gmm = []
+        self.gmm = []  # cached to disk, re-loaded if existing
 
         if set == 'small':
             # A toy dataset of 100k samples for rapid prototyping
@@ -130,15 +130,21 @@ class ColorizeImageNet(data.Dataset):
 
             else:
                 color_samples = self.get_color_samples(num_images=1000, pixel_subset=20)
-                gmm = GaussianMixture(n_components=num_hc_bins, \
-                                      covariance_type='full', init_params='kmeans', \
+                gmm = GaussianMixture(n_components=num_hc_bins,
+                                      covariance_type='full', init_params='kmeans',
                                       random_state=0, verbose=1)
                 gmm.fit(color_samples)
                 self.gmm = gmm
                 joblib.dump(gmm, gmm_path)
                 print 'done GMM fitting'
 
-
+        mean_l_path = osp.join(self.log_dir, 'mean_l.npy')
+        if osp.exists(mean_l_path):
+            print 'Loading mean lightness value from cache'
+            self.mean_l = np.load(mean_l_path)
+        else:
+            self.mean_l = np.mean(self.get_color_samples(channels='lightness'))
+            np.save(mean_l_path, self.mean_l)
 
 
     # -----------------------------------------------------------------------------
@@ -172,8 +178,7 @@ class ColorizeImageNet(data.Dataset):
         # Colorspace conversion: 
         #   RGB --> HSV; HSV --> H (hue), C (chroma), L (lightness)
         h, c, L = self.rgb_to_hue_chroma(img)
-        # TODO - zero center
-        # L = L * 255.0 # HACK: expand values
+        L = L - self.mean_l  # zero center
 
         # Binning: one-hot (labels and log-loss), soft (soft-binning and KL-div)
         if self.bins == 'one-hot':
@@ -237,7 +242,7 @@ class ColorizeImageNet(data.Dataset):
 
 
     # -----------------------------------------------------------------------------
-    def untransform(self, img):
+    def rescale(self, img):
     # -----------------------------------------------------------------------------
         scale_factor = self.im_size/np.max(img.size) # img is PIL.Image
         if scale_factor != 1:
@@ -249,13 +254,16 @@ class ColorizeImageNet(data.Dataset):
 
 
     # -----------------------------------------------------------------------------
-    def get_color_samples(self, num_images=1000, pixel_subset=50):
+    def get_color_samples(self, num_images=1000, pixel_subset=50, 
+                                channels='hue_chroma'):
     # -----------------------------------------------------------------------------
         '''
             Returns an Nx2 vector of sampled hue and chroma values, which can be 
             used learn a Gaussian Mixture Model. N = num_images*pixel_subset. 
             This method depends on having a 100k subset of train files from the
             ImageNet dataset available as a text-file (`files_small`).
+            Optional: can also be used to return Lightness samples (used to 
+            calculate the average image brightness for mean-subtraction).
         '''
         if self.set == 'tiny':
             files_small = osp.join(self.root, 'tiny_val.txt')
@@ -263,7 +271,6 @@ class ColorizeImageNet(data.Dataset):
             files_small = osp.join(self.root, 'files_100k_train.txt')
         assert osp.exists(files_small), 'File does not exist: %s' % files_small
 
-        # random subset of `num_images`
         imfn = []
         with open(files_small, 'r') as ftrain:
             for line in ftrain:
@@ -271,30 +278,46 @@ class ColorizeImageNet(data.Dataset):
 
         num_images = np.min([num_images, len(imfn)])
         if num_images < 100:
-            pixel_subset = 1000
+            pixel_subset = 1000 # for fewer images, sample more pixels/img
 
         sel = np.random.randint(0, np.min([num_images, len(imfn)]), num_images)
         imfn_subset = [imfn[i] for i in sel] # subset of filenames
 
-        hc_sample = []
-        print 'sampling pixels for Hue and Chroma . . . \r'
-        for img_file in imfn_subset:
-            im = PIL.Image.open(img_file)
-            if len(im.getbands()) != 3:
-                continue
-            im = np.array(im, dtype=np.uint8)
-            im_h, im_c, _ = self.rgb_to_hue_chroma(im)
-            im_h = im_h.flatten()
-            im_c = im_c.flatten()
-            sel_pixel = np.random.randint(0, len(im_h), pixel_subset)
-            hc_sample.append(np.stack((im_h[sel_pixel], im_c[sel_pixel]), 1))
+        if channels=='hue_chroma':
+            hc_sample = []
+            print 'sampling pixels for Hue and Chroma . . . \r'
+            for img_file in imfn_subset:
+                im = PIL.Image.open(img_file)
+                if len(im.getbands()) != 3:
+                    continue
+                im = np.array(im, dtype=np.uint8)
+                im_h, im_c, _ = self.rgb_to_hue_chroma(im)
+                im_h = im_h.flatten()
+                im_c = im_c.flatten()
+                sel_pixel = np.random.randint(0, len(im_h), pixel_subset)
+                hc_sample.append(np.stack((im_h[sel_pixel], im_c[sel_pixel]), 1))
 
-        hc_sample = np.concatenate(hc_sample, 0)
-        print 'finished sampling: %d' % hc_sample.shape[0]
-        return hc_sample
+            hc_sample = np.concatenate(hc_sample, 0)
+            print 'finished sampling: %d' % hc_sample.shape[0]
+            return hc_sample
+        elif channels=='lightness':
+            l_sample = []
+            print 'sampling pixels for Lightness . . . \r'
+            for img_file in imfn_subset:
+                im = PIL.Image.open(img_file)
+                if len(im.getbands()) != 3:
+                    continue
+                im = np.array(im, dtype=np.uint8)
+                _, _, im_l = self.rgb_to_hue_chroma(im)
+                im_l = im_l.flatten()
+                sel_pixel = np.random.randint(0, len(im_l), pixel_subset)
+                l_sample.append(im_l[sel_pixel])
 
-
-
+            l_sample = np.asarray(l_sample).flatten()
+            print 'finished sampling: %d' % len(l_sample)
+            return l_sample
+        else:
+            raise  ValueError('Channels: `hue_chroma` or `lightness`')
 
 
     # -----------------------------------------------------------------------------

@@ -189,10 +189,11 @@ class Trainer(object):
                 assert imgs.size()[0]==1   # HACK: assumes 1 image in a batch!
                 img = \
                     PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
-                img = self.val_loader.dataset.untransform(img) # orig RGB image
+                img = self.val_loader.dataset.rescale(img) # orig RGB image
+                img_l = np.squeeze(imgs.numpy()) + self.val_loader.dataset.mean_l
                 viz = utils.visualize_segmentation(lbl_pred=lbl_pred,
                         lbl_true=lbl_true, img=img, 
-                        im_l=np.squeeze(imgs.numpy()), n_class=n_class)
+                        im_l=img_l, n_class=n_class)
                 visualizations.append(viz)
 
             label_trues.append(lbl_true)
