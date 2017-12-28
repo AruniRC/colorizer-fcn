@@ -60,8 +60,10 @@ def visualize_segmentation(lbl_pred, lbl_true, img, im_l, n_class):
         color_map = skimage.color.color_dict.keys()
 
     img = skimage.img_as_float(img)
-    im_lbl_true = skimage.color.label2rgb(lbl_true, img, colors=color_map, alpha=0.7)
-    im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, colors=color_map, alpha=0.7)
+    im_lbl_true = skimage.color.label2rgb(lbl_true, img, kind='avg')
+    im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, kind='avg')
+    # im_lbl_true = skimage.color.label2rgb(lbl_true, img, colors=color_map, alpha=0.7)
+    # im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, colors=color_map, alpha=0.7)
     im_gray_rgb = skimage.color.gray2rgb(im_l)
 
     tiled_img = np.concatenate(
