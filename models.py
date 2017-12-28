@@ -1,6 +1,6 @@
-import os.path as osp
 
 # import fcn
+import os.path as osp
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,69 +26,84 @@ def get_upsampling_weight(in_channels, out_channels, kernel_size):
 
 class FCN32sColor(nn.Module):
 
-    def __init__(self, n_class=32, bin_type='one-hot'):
+    def __init__(self, n_class=32, bin_type='one-hot', batch_norm=True):
         super(FCN32sColor, self).__init__()
         self.n_class = n_class
         self.bin_type = bin_type
+        self.batch_norm = batch_norm
 
         # conv1
         self.conv1_1 = nn.Conv2d(1, 64, 3, padding=100)
         self.relu1_1 = nn.ReLU(inplace=True)
-        self.conv1_1_bn = nn.BatchNorm2d(64)
+        if batch_norm:
+            self.conv1_1_bn = nn.BatchNorm2d(64)
         self.conv1_2 = nn.Conv2d(64, 64, 3, padding=1)
         self.relu1_2 = nn.ReLU(inplace=True)
-        self.conv1_2_bn = nn.BatchNorm2d(64)
+        if batch_norm:
+            self.conv1_2_bn = nn.BatchNorm2d(64)
         self.pool1 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/2
 
         # conv2
         self.conv2_1 = nn.Conv2d(64, 128, 3, padding=1)
         self.relu2_1 = nn.ReLU(inplace=True)
-        self.conv2_1_bn = nn.BatchNorm2d(128)
+        if batch_norm:
+            self.conv2_1_bn = nn.BatchNorm2d(128)
         self.conv2_2 = nn.Conv2d(128, 128, 3, padding=1)
         self.relu2_2 = nn.ReLU(inplace=True)
-        self.conv2_2_bn = nn.BatchNorm2d(128)
+        if batch_norm:
+            self.conv2_2_bn = nn.BatchNorm2d(128)
         self.pool2 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/4
 
         # conv3
         self.conv3_1 = nn.Conv2d(128, 256, 3, padding=1)
         self.relu3_1 = nn.ReLU(inplace=True)
-        self.conv3_1_bn = nn.BatchNorm2d(256)
+        if batch_norm:
+            self.conv3_1_bn = nn.BatchNorm2d(256)
         self.conv3_2 = nn.Conv2d(256, 256, 3, padding=1)
         self.relu3_2 = nn.ReLU(inplace=True)
-        self.conv3_2_bn = nn.BatchNorm2d(256)
+        if batch_norm:
+            self.conv3_2_bn = nn.BatchNorm2d(256)
         self.conv3_3 = nn.Conv2d(256, 256, 3, padding=1)
         self.relu3_3 = nn.ReLU(inplace=True)
-        self.conv3_3_bn = nn.BatchNorm2d(256)
+        if batch_norm:
+            self.conv3_3_bn = nn.BatchNorm2d(256)
         self.pool3 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/8
 
         # conv4
         self.conv4_1 = nn.Conv2d(256, 512, 3, padding=1)
         self.relu4_1 = nn.ReLU(inplace=True)
-        self.conv4_1_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv4_1_bn = nn.BatchNorm2d(512)
         self.conv4_2 = nn.Conv2d(512, 512, 3, padding=1)
         self.relu4_2 = nn.ReLU(inplace=True)
-        self.conv4_2_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv4_2_bn = nn.BatchNorm2d(512)
         self.conv4_3 = nn.Conv2d(512, 512, 3, padding=1)
         self.relu4_3 = nn.ReLU(inplace=True)
-        self.conv4_3_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv4_3_bn = nn.BatchNorm2d(512)
         self.pool4 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/16
 
         # conv5
         self.conv5_1 = nn.Conv2d(512, 512, 3, padding=1)
         self.relu5_1 = nn.ReLU(inplace=True)
-        self.conv5_1_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv5_1_bn = nn.BatchNorm2d(512)
         self.conv5_2 = nn.Conv2d(512, 512, 3, padding=1)
         self.relu5_2 = nn.ReLU(inplace=True)
-        self.conv5_2_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv5_2_bn = nn.BatchNorm2d(512)
         self.conv5_3 = nn.Conv2d(512, 512, 3, padding=1)
         self.relu5_3 = nn.ReLU(inplace=True)
-        self.conv5_3_bn = nn.BatchNorm2d(512)
+        if batch_norm:
+            self.conv5_3_bn = nn.BatchNorm2d(512)
         self.pool5 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/32
 
         # fc6
         self.fc6 = nn.Conv2d(512, 4096, 7)
         self.relu6 = nn.ReLU(inplace=True)
-        self.fc6_bn = nn.BatchNorm2d(4096)
+        if batch_norm:
+            self.fc6_bn = nn.BatchNorm2d(4096)
         self.drop6 = nn.Dropout2d()
 
         # fc7
@@ -96,7 +111,6 @@ class FCN32sColor(nn.Module):
         self.relu7 = nn.ReLU(inplace=True)
         self.fc7_bn = nn.BatchNorm2d(4096)
         self.drop7 = nn.Dropout2d()
-
 
         if bin_type == 'one-hot':
             # NOTE: *two* output prediction maps for hue and chroma
@@ -106,10 +120,13 @@ class FCN32sColor(nn.Module):
             self.score_fr_chroma = nn.Conv2d(4096, n_class, 1)
             self.upscore_chroma = nn.ConvTranspose2d(n_class, n_class, 64, stride=32,
                                               bias=False)
+            self.upscore_hue.weight.requires_grad = False
+            self.upscore_chroma.weight.requires_grad = False
         elif bin_type == 'soft':
             self.score_fr = nn.Conv2d(4096, n_class, 1)
             self.upscore = nn.ConvTranspose2d(n_class, n_class, 64, stride=32,
-                                              bias=False)
+                                              bias=False)            
+            self.upscore.weight.requires_grad = False # fix bilinear upsampler
 
         self._initialize_weights()
         
@@ -127,33 +144,78 @@ class FCN32sColor(nn.Module):
 
     def forward(self, x):
         h = x
-        h = self.relu1_1(self.conv1_1_bn(self.conv1_1(h)))
-        h = self.relu1_2(self.conv1_2_bn(self.conv1_2(h)))
+        h = self.conv1_1(h)
+        if self.batch_norm:
+            h = self.conv1_1_bn(h)
+        h = self.relu1_1(h)
+        h = self.conv1_2(h)
+        if self.batch_norm:
+            h = self.conv1_2_bn(h)
+        h = self.relu1_2(h)
         h = self.pool1(h)
 
-        h = self.relu2_1(self.conv2_1_bn(self.conv2_1(h)))
-        h = self.relu2_2(self.conv2_2_bn(self.conv2_2(h)))
+        if self.batch_norm:
+            h = self.relu2_1(self.conv2_1_bn(self.conv2_1(h)))
+        else:
+            h = self.relu2_1(self.conv2_1(h))
+        if self.batch_norm:
+            h = self.relu2_2(self.conv2_2_bn(self.conv2_2(h)))
+        else:
+            h = self.relu2_2(self.conv2_2_bn(self.conv2_2(h)))
         h = self.pool2(h)
 
-        h = self.relu3_1(self.conv3_1_bn(self.conv3_1(h)))
-        h = self.relu3_2(self.conv3_2_bn(self.conv3_2(h)))
-        h = self.relu3_3(self.conv3_3_bn(self.conv3_3(h)))
+        if self.batch_norm:
+            h = self.relu3_1(self.conv3_1_bn(self.conv3_1(h)))
+        else:
+            h = self.relu3_1(self.conv3_1(h))
+        if self.batch_norm:
+            h = self.relu3_2(self.conv3_2_bn(self.conv3_2(h)))
+        else:
+            h = self.relu3_2(self.conv3_2(h))
+        if self.batch_norm:
+            h = self.relu3_3(self.conv3_3_bn(self.conv3_3(h)))
+        else:
+            h = self.relu3_3(self.conv3_3(h))
         h = self.pool3(h)
 
-        h = self.relu4_1(self.conv4_1_bn(self.conv4_1(h)))
-        h = self.relu4_2(self.conv4_2_bn(self.conv4_2(h)))
-        h = self.relu4_3(self.conv4_3_bn(self.conv4_3(h)))
+        if self.batch_norm:
+            h = self.relu4_1(self.conv4_1_bn(self.conv4_1(h)))
+        else:
+            h = self.relu4_1(self.conv4_1(h))
+        if self.batch_norm:
+            h = self.relu4_2(self.conv4_2_bn(self.conv4_2(h)))
+        else:
+            h = self.relu4_2(self.conv4_2(h))
+        if self.batch_norm:
+            h = self.relu4_3(self.conv4_3_bn(self.conv4_3(h)))
+        else:
+            h = self.relu4_3(self.conv4_3(h))
         h = self.pool4(h)
 
-        h = self.relu5_1(self.conv5_1_bn(self.conv5_1(h)))
-        h = self.relu5_2(self.conv5_2_bn(self.conv5_2(h)))
-        h = self.relu5_3(self.conv5_3_bn(self.conv5_3(h)))
+        if self.batch_norm:
+            h = self.relu5_1(self.conv5_1_bn(self.conv5_1(h)))
+        else:
+            h = self.relu5_1(self.conv5_1(h))
+        if self.batch_norm:
+            h = self.relu5_2(self.conv5_2_bn(self.conv5_2(h)))
+        else:
+            h = self.relu5_2(self.conv5_2(h))
+        if self.batch_norm:
+            h = self.relu5_3(self.conv5_3_bn(self.conv5_3(h)))
+        else:
+            h = self.relu5_3(self.conv5_3(h))
         h = self.pool5(h)
 
-        h = self.relu6(self.fc6_bn(self.fc6(h)))
+        if self.batch_norm:
+            h = self.relu6(self.fc6_bn(self.fc6(h)))
+        else:
+            h = self.relu6(self.fc6(h))
         h = self.drop6(h)
 
-        h = self.relu7(self.fc7_bn(self.fc7(h)))
+        if self.batch_norm:
+            h = self.relu7(self.fc7_bn(self.fc7(h)))
+        else:
+            h = self.relu7(self.fc7(h))
         h = self.drop7(h)
 
         if self.bin_type == 'one-hot':
@@ -174,3 +236,6 @@ class FCN32sColor(nn.Module):
             h = h[:, :, 19:19 + x.size()[2], 19:19 + x.size()[3]].contiguous()
 
         return h
+
+
+

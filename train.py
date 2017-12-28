@@ -81,7 +81,7 @@ class Trainer(object):
         self.val_loader = val_loader
 
         self.timestamp_start = \
-            datetime.datetime.now(pytz.timezone('US/Eastern')) # TODO - change to EST
+            datetime.datetime.now(pytz.timezone('US/Eastern'))
         self.size_average = size_average
 
         if interval_validate is None:
@@ -262,7 +262,6 @@ class Trainer(object):
                 continue  # for resuming
             self.iteration = iteration
 
-            # # DEBUG: comment validate
             if self.iteration % self.interval_validate == 0:
                 self.validate()
 
@@ -271,8 +270,8 @@ class Trainer(object):
             # Computing Losses
             if self.train_loader.dataset.bins == 'one-hot':
                 # Hue/Chroma as separate channels, 1-hot target, log-loss
+                target_hue, target_chroma = target
                 if self.cuda:
-                    target_hue, target_chroma = target
                     data, target_hue, target_chroma = \
                         data.cuda(), target_hue.cuda(), target_chroma.cuda()
                 data, target_hue, target_chroma = \
