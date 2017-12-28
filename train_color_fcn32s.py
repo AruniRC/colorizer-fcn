@@ -139,8 +139,6 @@ def main():
     if args.model_path:
         checkpoint = torch.load(args.model_path)        
         model.load_state_dict(checkpoint['model_state_dict'])
-    # for param in model.parameters():
-    #     param.requires_grad = False
     start_epoch = 0
     start_iteration = 0
     if resume:
@@ -158,22 +156,22 @@ def main():
     # 3. optimizer
     # -----------------------------------------------------------------------------
     params = filter(lambda p: p.requires_grad, model.parameters())
-    optim = torch.optim.SGD(params,
-					        lr=cfg['lr'],
-					        momentum=cfg['momentum'],
-					        weight_decay=cfg['weight_decay'])
-
-    # TODO - choose optimizer - Adam or SGD
-
-    # optim = torch.optim.SGD(
-    #     [
-    #         {'params': get_parameters(model, bias=False)},
-    #         {'params': get_parameters(model, bias=True),
-    #          'lr': cfg['lr'] * 2, 'weight_decay': 0},
-    #     ],
-    #     lr=cfg['lr'],
-    #     momentum=cfg['momentum'],
-    #     weight_decay=cfg['weight_decay'])
+    if 'optim' in cfg.keys():
+    	if cfg['optim'].lower()=='sgd':
+    		optim = torch.optim.SGD(params,
+				        lr=cfg['lr'],
+				        momentum=cfg['momentum'],
+				        weight_decay=cfg['weight_decay'])
+    	elif cfg['optim'].lower()=='adam':
+    		optim = torch.optim.Adam(params,
+				        lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+    	else:
+    		raise NotImplementedError('Optimizers: SGD or Adam')
+    else:
+	    optim = torch.optim.SGD(params,
+			        lr=cfg['lr'],
+			        momentum=cfg['momentum'],
+			        weight_decay=cfg['weight_decay'])
 
     if resume:
         optim.load_state_dict(checkpoint['optim_state_dict'])

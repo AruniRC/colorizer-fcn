@@ -129,6 +129,8 @@ class FCN32sColor(nn.Module):
             self.upscore.weight.requires_grad = False # fix bilinear upsampler
 
         self._initialize_weights()
+        # TODO - init from pre-trained network
+
         
 
     def _initialize_weights(self):
