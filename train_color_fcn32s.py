@@ -23,14 +23,15 @@ def git_hash():
     return hash
 
 
-def get_log_dir(model_name, config_id, cfg):
+def get_log_dir(model_name, config_id, cfg, verbose=True):
     # load config
     name = 'MODEL-%s_CFG-%03d' % (model_name, config_id)
-    for k, v in cfg.items():
-        v = str(v)
-        if '/' in v:
-            continue
-        name += '_%s-%s' % (k.upper(), v)
+    if verbose:
+	    for k, v in cfg.items():
+	        v = str(v)
+	        if '/' in v:
+	            continue
+	        name += '_%s-%s' % (k.upper(), v)
     now = datetime.datetime.now(pytz.timezone('US/Eastern'))
     name += '_VCS-%s' % git_hash()
     name += '_TIME-%s' % now.strftime('%Y%m%d-%H%M%S')
@@ -41,38 +42,6 @@ def get_log_dir(model_name, config_id, cfg):
     with open(osp.join(log_dir, 'config.yaml'), 'w') as f:
         yaml.safe_dump(cfg, f, default_flow_style=False)
     return log_dir
-
-
-def get_parameters(model, bias=False):
-    import torch.nn as nn
-    modules_skipped = (
-        nn.ReLU,
-        nn.MaxPool2d,
-        nn.Dropout2d,
-        nn.Sequential,
-        models.FCN32sColor
-    )
-    for m in model.modules():
-        if isinstance(m, nn.Conv2d):
-            if bias:
-                yield m.bias
-            else:
-                yield m.weight
-        elif isinstance(m, nn.ConvTranspose2d):
-            # weight is frozen because it is just a bilinear upsampling
-            if bias:
-                assert m.bias is None
-        elif isinstance(m, nn.BatchNorm2d):
-            # TODO - check with BN examples if correct procedure!
-            if bias:
-                yield m.bias
-            else:
-                yield m.weight
-        elif isinstance(m, modules_skipped):
-            continue
-        else:
-            raise ValueError('Unexpected module: %s' % str(m))
-
 
 here = osp.dirname(osp.abspath(__file__))
 
@@ -94,7 +63,7 @@ def main():
 
     gpu = args.gpu
     cfg = configurations[args.config]
-    out = get_log_dir('fcn32s_color', args.config, cfg) # TODO - change dir
+    out = get_log_dir('fcn32s_color', args.config, cfg, verbose=False)
     resume = args.resume
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
@@ -204,7 +173,6 @@ def main():
     #     # del inputs, outputs
 
     # model.train()
-
 
 
     # -----------------------------------------------------------------------------

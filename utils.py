@@ -44,10 +44,12 @@ def label_accuracy_score(label_trues, label_preds, n_class):
     return acc, acc_cls, mean_iu, fwavacc
 
 
-def visualize_segmentation(lbl_pred, lbl_true, img, im_l, n_class):
+def visualize_segmentation(lbl_pred, lbl_true, img, im_l, 
+                            n_class, viz_type='avg'):
     '''
         Returns a visualization of predictions and ground-truth labels
         [rgb_img, true_labels | grayscale_img, pred_labels]
+        viz_type - {'random', 'avg'}
     '''
     assert len(img.shape)==3
     assert len(im_l.shape)==2
@@ -60,10 +62,14 @@ def visualize_segmentation(lbl_pred, lbl_true, img, im_l, n_class):
         color_map = skimage.color.color_dict.keys()
 
     img = skimage.img_as_float(img)
-    im_lbl_true = skimage.color.label2rgb(lbl_true, img, kind='avg')
-    im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, kind='avg')
-    # im_lbl_true = skimage.color.label2rgb(lbl_true, img, colors=color_map, alpha=0.7)
-    # im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, colors=color_map, alpha=0.7)
+    if viz_type=='avg':
+        im_lbl_true = skimage.color.label2rgb(lbl_true, img, kind='avg')
+        im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, kind='avg')
+    elif viz_type=='random':
+        im_lbl_true = skimage.color.label2rgb(lbl_true, img, 
+                                                colors=color_map, alpha=0.7)
+        im_lbl_pred = skimage.color.label2rgb(lbl_pred, img, 
+                                                colors=color_map, alpha=0.7)
     im_gray_rgb = skimage.color.gray2rgb(im_l)
 
     tiled_img = np.concatenate(

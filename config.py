@@ -80,11 +80,12 @@ configurations = {
     ),
 
     9: dict(
-        max_iteration=100,
-        lr=1.0e-7,     # changed learning rate
+        max_iteration=1000,
+        lr=1.0e-4,
         momentum=0.9,  
         weight_decay=0.0005,
-        interval_validate=10,
+        interval_validate=50,
+        optim='Adam',
     ),
 
     # learning rates for Adam optimiser
