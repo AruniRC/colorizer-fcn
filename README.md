@@ -16,5 +16,5 @@ This addresses the massive slowdown in executing `model.cuda()`.
 For visualizing the labeled regions in the image, the _average RGB_ within each labeled region is used. 
 
 [Color image | target clusters | grayscale image | predicted clusters ]
-![viz results tiny](figures/fcn32s-tiny-iter10000.jpg)
+![viz results tiny](figures/fcn32s-tiny-iter1000.jpg)
 
