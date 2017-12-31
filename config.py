@@ -96,5 +96,47 @@ configurations = {
         weight_decay=0.0005,
         interval_validate=10,
         optim='Adam',
-    )
+    ),
+
+    # Adam + training on 10k data
+    11: dict(
+        max_iteration=100000,
+        lr=1.0e-4, # changed learning rate
+        momentum=0.9,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+    ),
+
+    12: dict(
+        max_iteration=100000,
+        lr=1.0e-5, # changed learning rate
+        momentum=0.8,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+    ),
+
+    13: dict(
+        max_iteration=100000,
+        lr=1.0e-6, # changed learning rate
+        momentum=0.8,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+    ),
+
+    # low-pass on image to make task easier
+    14: dict(
+        max_iteration=100000,
+        lr=1.0e-6, # changed learning rate
+        momentum=0.8,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=8,
+        train_set='full',
+        val_set='tiny',
+    ),
+
 }

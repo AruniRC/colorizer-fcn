@@ -56,13 +56,14 @@ def main():
                         choices=('soft','one-hot'))
     parser.add_argument('-k', '--numbins', type=int, default=32)
     parser.add_argument('-d', '--dataset_path', 
-                        default='/data/arunirc/datasets/ImageNet/images')
+                        default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
     parser.add_argument('-m', '--model_path', default=None)
     parser.add_argument('--resume', help='Checkpoint path')
     args = parser.parse_args()
 
     gpu = args.gpu
     cfg = configurations[args.config]
+    cfg.update({'bin_type':args.binning,'numbins':args.numbins})
     out = get_log_dir('fcn32s_color', args.config, cfg, verbose=False)
     resume = args.resume
 
@@ -83,16 +84,32 @@ def main():
     root = args.dataset_path
     kwargs = {'num_workers': 4, 'pin_memory': True} if cuda else {}
     
+    if 'img_lowpass' in cfg.keys():
+        img_lowpass = cfg['img_lowpass']
+    else:
+        img_lowpass = None
+    if 'train_set' in cfg.keys():
+        train_set = cfg['train_set']
+    else:
+        train_set = 'full'
+    if 'val_set' in cfg.keys():
+        val_set = cfg['val_set']
+    else:
+        val_set = 'small'
+
+    
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
-        data_loader.ColorizeImageNet(root, split='train', \
-        bins=args.binning, log_dir=out, num_hc_bins=args.numbins, set='tiny'),
-        batch_size=1, shuffle=False, **kwargs) # DEBUG: set shuffle False
+        data_loader.ColorizeImageNet(root, split='train', 
+        bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
+        set=train_set, img_lowpass=img_lowpass),
+        batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
-        data_loader.ColorizeImageNet(root, split='val', \
-        bins=args.binning, log_dir=out, num_hc_bins=args.numbins, set='tiny'),
+        data_loader.ColorizeImageNet(root, split='val', 
+        bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
+        set=val_set, img_lowpass=img_lowpass),
         batch_size=1, shuffle=False, **kwargs)
 
 
@@ -172,7 +189,7 @@ def main():
     #     # TODO: assertions
     #     # del inputs, outputs
 
-    # model.train()
+    # model.train()    
 
 
     # -----------------------------------------------------------------------------

@@ -1,10 +1,15 @@
 import collections
 import os.path as osp
+# from __future__ import division
 
 import numpy as np
 import PIL.Image
 import scipy.io
+import skimage
 import skimage.color as color
+from skimage.transform import rescale
+from skimage.transform import resize
+from skimage.filters import gaussian
 from sklearn.mixture import GaussianMixture
 from sklearn.externals import joblib
 import torch
@@ -66,7 +71,7 @@ class ColorizeImageNet(data.Dataset):
 
     # -----------------------------------------------------------------------------
     def __init__(self, root, log_dir = '.', split='train', set='small',
-                             num_hc_bins=32, bins='one-hot'):
+                             num_hc_bins=32, bins='one-hot', img_lowpass=None):
     # -----------------------------------------------------------------------------
         '''
             Parameters
@@ -75,13 +80,14 @@ class ColorizeImageNet(data.Dataset):
             log_dir     -   Output location to cache results (needed for soft-binning)
             split       -   Either 'train' or 'val'
             set         -   Can be 'full', 'small' (100k samples) or 'tiny' (9 images)
-            num_hc_bins -
             bins        -   String. If 'one-hot' - bins separately for Hue and
                             Chroma channels. Values quantized uniformly in 
                             [0..1]. If 'soft', then a GMM is used to assign soft 
                             binning to each pixel in a [1xnum_hc_bins] vector. 
                             In the 'soft' case, KLDivLoss loss needs to be used
                             in the network, instead of the usual log-loss.
+            num_hc_bins -   Usually 32 for 'one-hot' and 64 for GMM clusters in 'soft'.
+            img_lowpass -   Scalar downsampling factor on Hue and Chroma.
         ''' 
         self.root = root  # '.../ImageNet/images'
         self.log_dir = log_dir
@@ -93,29 +99,24 @@ class ColorizeImageNet(data.Dataset):
         self.bins = bins
         self.set = set
         self.gmm = []  # cached to disk, re-loaded if existing
+        self.img_lowpass = img_lowpass
 
         if set == 'small':
             # A toy dataset of 100k samples for rapid prototyping
-            files_small = osp.join(root, 'files_100k_'+split+'.txt')
-            assert osp.exists(files_small), 'File does not exist: %s' % files_small
-            imfn = []
-            with open(files_small, 'r') as ftrain:
-                for line in ftrain:
-                    imfn.append(osp.join(root, line.strip()))
-            self.files[split] =  imfn
-
+            files_list = osp.join(root, 'files_100k_'+split+'.txt')
         elif set == 'tiny':
             # DEBUG: 9 val set images
-            files_small = osp.join(root, 'tiny_val.txt')
-            assert osp.exists(files_small), 'File does not exist: %s' % files_small
-            imfn = []
-            with open(files_small, 'r') as ftrain:
-                for line in ftrain:
-                    imfn.append(osp.join(root, line.strip()))
-            self.files[split] =  imfn
+            files_list = osp.join(root, 'tiny_val.txt')
+        elif set == 'full':
+            # read in entire ImageNet dataset filenames
+            files_list = osp.join(root, 'files_'+split+'.txt')
 
-
-        # TODO - read in entire ImageNet dataset filenames
+        assert osp.exists(files_list), 'File does not exist: %s' % files_list
+        imfn = []
+        with open(files_list, 'r') as ftrain:
+            for line in ftrain:
+                imfn.append(osp.join(root, line.strip()))
+        self.files[split] =  imfn
 
 
         if self.bins=='soft':
@@ -179,6 +180,15 @@ class ColorizeImageNet(data.Dataset):
         #   RGB --> HSV; HSV --> H (hue), C (chroma), L (lightness)
         h, c, L = self.rgb_to_hue_chroma(img)
         L = L - self.mean_l  # zero center
+
+        if self.img_lowpass:
+            im_shape = h.shape
+            h = skimage.filters.gaussian(h, sigma=8)            
+            h = skimage.transform.rescale(h, 1.0/self.img_lowpass)
+            h = skimage.transform.resize(h, im_shape)
+            c = skimage.filters.gaussian(c, sigma=8)
+            c = skimage.transform.rescale(c, 1.0/self.img_lowpass)
+            c = skimage.transform.resize(c, im_shape)
 
         # Binning: one-hot (labels and log-loss), soft (soft-binning and KL-div)
         if self.bins == 'one-hot':

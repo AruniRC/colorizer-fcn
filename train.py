@@ -123,7 +123,7 @@ class Trainer(object):
     # -----------------------------------------------------------------------------
         training = self.model.training
         self.model.eval()
-        MAX_NUM = 100 # HACK: stop after 500 images
+        MAX_NUM = 100 # HACK: stop after 100 images
 
         n_class = self.val_loader.dataset.num_hc_bins
 
@@ -199,7 +199,7 @@ class Trainer(object):
             label_trues.append(lbl_true)
             label_preds.append(lbl_pred)
 
-            del lbl_true, lbl_pred, data, loss, imgs, viz
+            del lbl_true, lbl_pred, data, loss, imgs
 
             if batch_idx > MAX_NUM:
                 break
@@ -330,8 +330,8 @@ class Trainer(object):
                     metrics.tolist() + [''] * 5 + [elapsed_time]
                 log = map(str, log)
                 f.write(','.join(log) + '\n')
-                print '\nEpoch: ' + str(self.epoch) + ' Iter: ' + str(self.iteration) + \
-                        ' Loss: ' + str(loss.data[0])
+                # print '\nEpoch: ' + str(self.epoch) + ' Iter: ' + str(self.iteration) + \
+                #         ' Loss: ' + str(loss.data[0])
 
             if self.iteration >= self.max_iter:
                 break
