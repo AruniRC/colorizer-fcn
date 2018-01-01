@@ -11,7 +11,7 @@ This addresses the massive slowdown in executing `model.cuda()`.
 
 ### Usage
 
-Experiment settings such as learning rate are defined in `config.py`, each setting as a key in a Python dict. Training FCN-32s (stride of 32 px) is done first, using `train_color_fcn32s.py` and specifying a configuration (the input args are explained in the Python script).
+Experiment settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail in the Python script).
 
 ### Experiments
 
@@ -22,10 +22,11 @@ For visualizing the labeled regions in the image, the _average RGB_ within each 
 [Color image | target clusters | grayscale image | predicted clusters ]
 ![viz results tiny](figures/fcn32s-tiny-iter1000.jpg)
 
-* **FCN 32s simplified training** - Given that the FCN 32s model is by construction not designed for very fine-grained spatial segmentation (due to its large 32 pixel stride), we make the task easier by reducing the number of GMM color clusters and removing high-frequency terms from the target label mask. This makes the task simple enough for the network to train on readily, and give reasonable, although rough, _validation set_ results after 100k iterations. Config 14 in `config.py` is used. 
+* **FCN 32s lowpass training** - Given that the FCN 32s model is by construction not designed for very fine-grained spatial segmentation (due to its large 32 pixel stride), we make the task easier by reducing the number of GMM color clusters to 16 and reducing the spatial resolution the target label mask by 8x. This makes the task simple enough for the network to train till convergence, and give rough _validation set_ results after 100k iterations. Config 14 in `config.py` is used. The IoU is very low, so the the next step is to use **FCN 16s** initialized with the current network.
 
+[Color image | target clusters | grayscale image | predicted clusters ]
 ![viz results fcn32s](figures/fcn32s_14_iter100000.jpg)
 
-![val loss fcn32s](figures/fcn32s_c14_val_loss.png)
+![loss fcn32s](figures/fcn32s_c14_val_loss.png) ![iou fcn32s](figures/fcn32s_c14_val_mean_iou.png)
 
 
