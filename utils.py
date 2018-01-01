@@ -13,6 +13,50 @@ import scipy.ndimage
 import six
 import skimage
 import skimage.color
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+import os
+import os.path as osp
+
+
+
+def plot_log_csv(log_path):
+	log_dir, _ = osp.split(log_path)
+	dat = np.genfromtxt(log_path, names=True, 
+						delimiter=',', autostrip=True)
+
+	# train_loss =  dat['trainloss']
+	# train_loss_sel = ~np.isnan(train_loss)
+	# train_loss = train_loss[train_loss_sel]
+	# iter_train_loss = dat['iteration'][train_loss_sel]
+
+	val_loss =  dat['validloss']
+	val_loss_sel = ~np.isnan(val_loss)
+	val_loss = val_loss[val_loss_sel]
+	iter_val_loss = dat['iteration'][val_loss_sel]
+
+	mean_iu = dat['validmean_iu']
+	mean_iu_sel = ~np.isnan(mean_iu)
+	mean_iu = mean_iu[mean_iu_sel]
+	iter_mean_iu = dat['iteration'][mean_iu_sel]
+
+	f = plt.figure()
+	plt.plot(iter_mean_iu, mean_iu, label='val')
+	plt.xlabel('iteration')
+	plt.ylabel('mean IoU')
+	plt.grid()
+	plt.legend()
+	plt.savefig(osp.join(log_dir, 'val_mean_iou.png'), bbox_inches='tight')
+
+	f = plt.figure()
+	plt.plot(iter_val_loss, val_loss, label='val')
+	plt.xlabel('iteration')
+	plt.ylabel('KLdiv loss')
+	plt.grid()
+	plt.legend()
+	plt.savefig(osp.join(log_dir, 'val_loss.png'), bbox_inches='tight')
+
 
 
 def _fast_hist(label_true, label_pred, n_class):
@@ -44,8 +88,9 @@ def label_accuracy_score(label_trues, label_preds, n_class):
     return acc, acc_cls, mean_iu, fwavacc
 
 
-def visualize_segmentation(lbl_pred, lbl_true, img, im_l, 
-                            n_class, viz_type='avg'):
+
+def visualize_segmentation(lbl_pred, lbl_true, img, im_l, \
+	n_class, viz_type='avg'):
     '''
         Returns a visualization of predictions and ground-truth labels
         [rgb_img, true_labels | grayscale_img, pred_labels]

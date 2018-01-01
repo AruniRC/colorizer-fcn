@@ -136,7 +136,7 @@ configurations = {
         optim='Adam',
         img_lowpass=8,
         train_set='full',
-        val_set='tiny',
+        val_set='small',
     ),
 
 }
