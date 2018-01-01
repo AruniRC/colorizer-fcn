@@ -27,6 +27,7 @@ For visualizing the labeled regions in the image, the _average RGB_ within each 
 [Color image | target clusters | grayscale image | predicted clusters ]
 ![viz results fcn32s](figures/fcn32s_14_iter100000.jpg)
 
-![loss fcn32s](figures/fcn32s_c14_val_loss.png) ![iou fcn32s](figures/fcn32s_c14_val_mean_iou.png)
+<img src="figures/fcn32s_c14_val_loss.png" width="200" />
+<img src="figures/fcn32s_c14_val_mean_iou.png" width="200" />
 
 
