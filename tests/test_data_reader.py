@@ -134,6 +134,17 @@ def test_lowpass_image():
     print 'Test passed: test_soft_bins'
 
 
+def test_init_gmm():
+    # Pass paths to cached GMM and mean Lightness
+    GMM_PATH = '/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-014_VCS-db517d6_TIME-20171230-212406/gmm.pkl'
+    MEAN_L_PATH = '/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-014_VCS-db517d6_TIME-20171230-212406/mean_l.npy'
+    dataset = \
+        data_loader.ColorizeImageNet(
+            root, split='train', set='tiny', bins='soft', 
+            gmm_path=GMM_PATH, mean_l_path=MEAN_L_PATH)
+    print 'Test passed: test_init_gmm'
+
+
 
 def main():
     test_single_read()
@@ -142,8 +153,8 @@ def main():
     test_cmyk_read()
     test_grayscale_read()
     test_soft_bins()
-
     test_lowpass_image()
+    test_init_gmm()
 
     # 
 

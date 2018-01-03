@@ -71,7 +71,8 @@ class ColorizeImageNet(data.Dataset):
 
     # -----------------------------------------------------------------------------
     def __init__(self, root, log_dir = '.', split='train', set='small',
-                             num_hc_bins=32, bins='one-hot', img_lowpass=None):
+                             num_hc_bins=32, bins='one-hot', img_lowpass=None, 
+                             gmm_path=None, mean_l_path=None):
     # -----------------------------------------------------------------------------
         '''
             Parameters
@@ -88,6 +89,8 @@ class ColorizeImageNet(data.Dataset):
                             in the network, instead of the usual log-loss.
             num_hc_bins -   Usually 32 for 'one-hot' and 64 for GMM clusters in 'soft'.
             img_lowpass -   Scalar downsampling factor on Hue and Chroma.
+            gmm_path,
+            mean_l_path -   Optional. Paths to cached GMM and mean lightness value. 
         ''' 
         self.root = root  # '.../ImageNet/images'
         self.log_dir = log_dir
@@ -123,7 +126,8 @@ class ColorizeImageNet(data.Dataset):
             # estimate GMM on joint Hue and Chroma values
             #   1. sample data points (num_images*pixel_subset)
             #   2. fit GMM
-            gmm_path = osp.join(self.log_dir, 'gmm.pkl')
+            if not gmm_path:
+                gmm_path = osp.join(self.log_dir, 'gmm.pkl')
 
             if osp.exists(gmm_path):
                 print 'Loading GMM parameters from cache'
@@ -139,7 +143,8 @@ class ColorizeImageNet(data.Dataset):
                 joblib.dump(gmm, gmm_path)
                 print 'done GMM fitting'
 
-        mean_l_path = osp.join(self.log_dir, 'mean_l.npy')
+        if not mean_l_path:
+            mean_l_path = osp.join(self.log_dir, 'mean_l.npy')
         if osp.exists(mean_l_path):
             print 'Loading mean lightness value from cache'
             self.mean_l = np.load(mean_l_path)
@@ -237,6 +242,17 @@ class ColorizeImageNet(data.Dataset):
         c = v * s
         L = v - (c/2.0)
         return h, c, L
+
+    # -----------------------------------------------------------------------------
+    def hue_chroma_to_rgb(self, im_hc, im_l):
+    # -----------------------------------------------------------------------------
+        h = im_hc[:,:,0]
+        c = im_hc[:,:,1]
+        v = im_l + (c/2.0)
+        s = c/v
+        im_hsv = np.stack((h,s,v), axis=2)
+        im_rgb = color.hsv2rgb(im_hsv)
+        return im_rgb
 
 
     # -----------------------------------------------------------------------------
@@ -337,8 +353,6 @@ class ColorizeImageNet(data.Dataset):
             TODO
             Convert the predicted labels of Hue and Chroma into actual values, 
             using bin centers.
-
-            Binning:  bins[i-1] <= x < bins[i] 
 
             Parameters
             ----------

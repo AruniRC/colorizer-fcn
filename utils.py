@@ -13,12 +13,11 @@ import scipy.ndimage
 import six
 import skimage
 import skimage.color
+import os
+import os.path as osp
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-import os
-import os.path as osp
-
 
 
 def plot_log_csv(log_path):
@@ -56,6 +55,73 @@ def plot_log_csv(log_path):
 	plt.grid()
 	plt.legend()
 	plt.savefig(osp.join(log_dir, 'val_loss.png'), bbox_inches='tight')
+
+
+
+def colorize_image_hc(labels, img, gmm, mean_l):
+    '''
+        Colorizes a grayscale image given the colorizer network 
+        predictions for joint Hue/Chroma cluster centroids. 
+
+        Inputs
+        ------
+        labels   -   Predicted labels as float numpy array 
+        img      -   Grayscale image as float numpy array
+        gmm      -   GMM model of Hue/Chroma
+
+        Output
+        ------
+        im_out   -   RGB image
+
+        Example
+        -------
+        from sklearn.externals import joblib
+        import numpy as np
+        import utils
+        gmm_path = osp.join(log_dir, 'gmm.pkl')
+        gmm = joblib.load(gmm_path)
+        mean_l_path = osp.join(log_dir, 'mean_l.npy')
+        mean_l = np.load(mean_l_path)
+        # ... predicted labels and input image (mean subtracted)
+        labels = labels.numpy()
+        img = img.squeeze().numpy()
+        im_rgb = utils.colorize_image_hc(labels, img, gmm, mean_l)
+    '''
+    labels = labels.astype(gmm.means_.dtype)
+    img = img.astype(gmm.means_.dtype)
+
+    # expectation over GMM centroids
+    hc_means = gmm.means_.astype(labels.dtype)
+    im_hc = np.tensordot(labels, hc_means, (2,0)) 
+    im_l = img + mean_l.astype(img.dtype)
+    im_rgb = dataset.hue_chroma_to_rgb(im_hc, im_l)
+    low, high = np.min(im_rgb), np.max(im_rgb)
+    im_rgb = (im_rgb - low) / (high - low)
+    im_out = img_as_ubyte(im_rgb)
+    return im_out
+
+
+def _rgb_to_hue_chroma(img):
+    im_hsv = skimage.color.rgb2hsv(img)
+    if np.isnan(np.sum(im_hsv)):
+        raise ValueError('HSV from RGB conversion has NaN.')
+    h = im_hsv[:,:,0]
+    s = im_hsv[:,:,1]
+    v = im_hsv[:,:,2]
+    c = v * s
+    L = v - (c/2.0)
+    return h, c, L
+
+
+def _hue_chroma_to_rgb(im_hc, im_l):
+    h = im_hc[:,:,0]
+    c = im_hc[:,:,1]
+    v = im_l + (c/2.0)
+    s = c/v
+    im_hsv = np.stack((h,s,v), axis=2)
+    im_rgb = skimage.color.hsv2rgb(im_hsv)
+    return im_rgb
+
 
 
 
