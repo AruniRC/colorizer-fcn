@@ -11,7 +11,10 @@ This addresses the massive slowdown in executing `model.cuda()`.
 
 ### Usage
 
-Experiment settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail in the Python script).
+Experiment settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn*s.py` and specifying a configuration number (the input args are explained in more detail inside the Python script).
+
+The training metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. The loss and mean IoU on the validation set can be visualized by _manually_ calling `plot_log_csv(log_file_path)` from the `utils` module. Intermediate clustering results on 9 images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
+
 
 ### Experiments
 
@@ -22,7 +25,8 @@ For visualizing the labeled regions in the image, the _average RGB_ within each 
 [Color image | target clusters | grayscale image | predicted clusters ]
 ![viz results tiny](figures/fcn32s-tiny-iter1000.jpg)
 
-* **FCN 32s lowpass training** - Given that the FCN 32s model is by construction not designed for very fine-grained spatial segmentation (due to its large 32 pixel stride), we make the task easier by reducing the number of GMM color clusters to 16 and reducing the spatial resolution the target label mask by 8x. This makes the task simple enough for the network to train till convergence, and give rough _validation set_ results after 100k iterations. Config 14 in `config.py` is used. The IoU is very low, so the the next step is to use **FCN 16s** initialized with the current network.
+
+* **FCN 32s, lowpass, 100k, K=16** - Given that the FCN 32s model is by construction not designed for very fine-grained spatial segmentation (due to its large 32 pixel stride), we make the task easier by reducing the number of GMM color clusters to 16 and reducing the spatial resolution the target label mask by 8x. This makes the task simple enough for the network to train till convergence, and give rough _validation set_ results after 100k iterations. Cfg-14 in `config.py` is used. The IoU is very low, so the the next step is to use **FCN 16s** initialized with the current network.
 
 [Color image | target clusters | grayscale image | predicted clusters ]
 ![viz results fcn32s](figures/fcn32s_14_iter100000.jpg)
@@ -32,6 +36,17 @@ Validation Loss                       |  Validation Mean IoU
 ![](figures/fcn32s_c14_val_loss.png)  |  ![](figures/fcn32s_c14_val_mean_iou.png)
 
 
+* **FCN 16s, lowpass, 100k, K=16** - Initialized FCN 16s from FCN 32s (best val performance model) trained in previous step. Experimental settings are as above (100k iterations using Adam, batchsize 1). Model definition in `models.py` and full training hyper-parameters are Cfg-15 under `config.py`. 
+
+[Color image | target clusters | grayscale image | predicted clusters ]
+![viz results fcn16s](figures/fcn16s_c15_iter99950.jpg)
+
+Validation Loss                       |  Validation Mean IoU
+:------------------------------------:|:---------------------------------:
+![](figures/fcn16s_c15_val_loss.png)  |  ![](figures/fcn16s_c15_val_mean_iou.png)
+
+
+* **FCN 8s, lowpass, 100k, K=16** - ... coming soon to a GitHub near you ...
 
 
 
