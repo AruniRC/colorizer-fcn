@@ -169,7 +169,7 @@ configurations = {
         mean_l_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/mean_l.npy',
     ),
 
-    16: dict(
+    17: dict(
         max_iteration=100000,
         lr=1.0e-7, # changed learning rate
         momentum=0.8,  
@@ -180,6 +180,21 @@ configurations = {
         train_set='full',
         val_set='small',
         fcn32s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-014_VCS-db517d6_TIME-20171230-212406/model_best.pth.tar',
+        gmm_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/gmm.pkl',
+        mean_l_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/mean_l.npy',
+    ),
+
+    18: dict(
+        max_iteration=100000,
+        lr=1.0e-6, # changed learning rate
+        momentum=0.8,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=8,
+        train_set='full',
+        val_set='small',
+        fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-016_VCS-8b659a0_TIME-20180102-211836/model_best.pth.tar',
         gmm_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/gmm.pkl',
         mean_l_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/mean_l.npy',
     ),
