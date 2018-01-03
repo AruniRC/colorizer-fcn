@@ -46,8 +46,14 @@ Validation Loss                       |  Validation Mean IoU
 ![](figures/fcn16s_c15_val_loss.png)  |  ![](figures/fcn16s_c15_val_mean_iou.png)
 
 
-* **FCN 8s, lowpass, 100k, K=16** - ... coming soon to a GitHub near you ...
+* **FCN 8s, lowpass, 100k, K=16** -
 
+[Color image | target clusters | grayscale image | predicted clusters ]
+![viz results fcn8s](figures/fcn8s_c18_iter99750.jpg)
+
+Validation Loss                       |  Validation Mean IoU
+:------------------------------------:|:---------------------------------:
+![](figures/fcn8s_c18_val_loss.png)  |  ![](figures/fcn8s_c18_val_mean_iou.png)
 
 
 
