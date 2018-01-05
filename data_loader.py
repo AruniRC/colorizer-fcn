@@ -98,7 +98,7 @@ class ColorizeImageNet(data.Dataset):
         self.files = collections.defaultdict(list)
         self.num_hc_bins = num_hc_bins
         self.hc_bins = np.linspace(0,1,num=num_hc_bins) # Hue and chroma bins (fixed)
-        self.im_size = 500.0 # scale larger side of image to this value
+        self.im_size = 400.0 # scale larger side of image to this value
         self.bins = bins
         self.set = set
         self.gmm = []  # cached to disk, re-loaded if existing
@@ -134,7 +134,7 @@ class ColorizeImageNet(data.Dataset):
                 self.gmm = joblib.load(gmm_path)
 
             else:
-                color_samples = self.get_color_samples(num_images=1000, pixel_subset=20)
+                color_samples = self.get_color_samples(num_images=5000, pixel_subset=20)
                 gmm = GaussianMixture(n_components=num_hc_bins,
                                       covariance_type='full', init_params='kmeans',
                                       random_state=0, verbose=1)
@@ -188,10 +188,10 @@ class ColorizeImageNet(data.Dataset):
 
         if self.img_lowpass:
             im_shape = h.shape
-            h = skimage.filters.gaussian(h, sigma=8)            
+            h = skimage.filters.gaussian(h, sigma=self.img_lowpass)            
             h = skimage.transform.rescale(h, 1.0/self.img_lowpass)
             h = skimage.transform.resize(h, im_shape)
-            c = skimage.filters.gaussian(c, sigma=8)
+            c = skimage.filters.gaussian(c, sigma=self.img_lowpass)
             c = skimage.transform.rescale(c, 1.0/self.img_lowpass)
             c = skimage.transform.resize(c, im_shape)
 
@@ -326,6 +326,7 @@ class ColorizeImageNet(data.Dataset):
             hc_sample = np.concatenate(hc_sample, 0)
             print 'finished sampling: %d' % hc_sample.shape[0]
             return hc_sample
+
         elif channels=='lightness':
             l_sample = []
             print 'sampling pixels for Lightness . . . \r'
@@ -342,6 +343,7 @@ class ColorizeImageNet(data.Dataset):
             l_sample = np.asarray(l_sample).flatten()
             print 'finished sampling: %d' % len(l_sample)
             return l_sample
+
         else:
             raise  ValueError('Channels: `hue_chroma` or `lightness`')
 

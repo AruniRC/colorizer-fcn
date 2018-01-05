@@ -13,6 +13,7 @@ import scipy.ndimage
 import six
 import skimage
 import skimage.color
+from skimage import img_as_ubyte
 import os
 import os.path as osp
 import matplotlib
@@ -58,7 +59,7 @@ def plot_log_csv(log_path):
 
 
 
-def colorize_image_hc(labels, img, gmm, mean_l):
+def colorize_image_hc(labels, img, gmm, mean_l, method='mean'):
     '''
         Colorizes a grayscale image given the colorizer network 
         predictions for joint Hue/Chroma cluster centroids. 
@@ -68,6 +69,7 @@ def colorize_image_hc(labels, img, gmm, mean_l):
         labels   -   Predicted labels as float numpy array 
         img      -   Grayscale image as float numpy array
         gmm      -   GMM model of Hue/Chroma
+        method   -   
 
         Output
         ------
@@ -90,11 +92,19 @@ def colorize_image_hc(labels, img, gmm, mean_l):
     labels = labels.astype(gmm.means_.dtype)
     img = img.astype(gmm.means_.dtype)
 
-    # expectation over GMM centroids
+    
     hc_means = gmm.means_.astype(labels.dtype)
-    im_hc = np.tensordot(labels, hc_means, (2,0)) 
+
+    if method == 'mean':
+        # expectation over GMM centroids
+        im_hc = np.tensordot(labels, hc_means, (2,0))
+    elif method == 'max':
+        # argmax CMM centroid
+        label_id = np.argmax(labels, axis=2)
+        im_hc = hc_means[label_id]
+
     im_l = img + mean_l.astype(img.dtype)
-    im_rgb = dataset.hue_chroma_to_rgb(im_hc, im_l)
+    im_rgb = _hue_chroma_to_rgb(im_hc, im_l)
     low, high = np.min(im_rgb), np.max(im_rgb)
     im_rgb = (im_rgb - low) / (high - low)
     im_out = img_as_ubyte(im_rgb)

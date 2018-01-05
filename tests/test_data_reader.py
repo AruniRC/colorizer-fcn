@@ -157,11 +157,8 @@ def main():
     test_init_gmm()
 
     # 
-
     # dataset.get_color_samples()
-
     # test_dataset_read()
-
     # TODO - test_labels
     # TODO - test colorspace conversions
 

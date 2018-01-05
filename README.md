@@ -1,6 +1,7 @@
 ## Colorize FCN
 
-Learn to colorize grayscale images using the FCN segmentation architecture.
+Learn to colorize grayscale images using the FCN segmentation architecture. 
+A lot of this code is based off a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn
 
 ### Setup
 

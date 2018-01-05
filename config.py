@@ -126,7 +126,7 @@ configurations = {
         optim='Adam',
     ),
 
-    # low-pass on image to make task easier, FCN 32s
+    # low-pass on target image to make task easier, FCN 32s
     14: dict(
         max_iteration=100000,
         lr=1.0e-6, # changed learning rate
@@ -184,6 +184,7 @@ configurations = {
         mean_l_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/mean_l.npy',
     ),
 
+    # train FCN 8s
     18: dict(
         max_iteration=100000,
         lr=1.0e-6, # changed learning rate
@@ -197,6 +198,20 @@ configurations = {
         fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-016_VCS-8b659a0_TIME-20180102-211836/model_best.pth.tar',
         gmm_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/gmm.pkl',
         mean_l_path='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-015_VCS-8b659a0_TIME-20180101-055032/mean_l.npy',
+    ),
+
+    # train FCN 8s on full-res targets
+    # python train_color_fcn8s.py -g 0 -c 19 -b soft -k 16 -m .../MODEL-fcn8s_color_CFG-018.../model_best.pth.tar
+    19: dict(
+        max_iteration=100000,
+        lr=1.0e-6, # changed learning rate
+        momentum=0.8,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=4,
+        train_set='full',
+        val_set='small',
     ),
 
 }
