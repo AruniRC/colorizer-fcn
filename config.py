@@ -226,6 +226,21 @@ configurations = {
         val_set='full',
         fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-016_VCS-8b659a0_TIME-20180102-211836/model_best.pth.tar',
     ),
+
+    21: dict(
+        max_iteration=1.0e+6,
+        lr=1.0e-5, # changed learning rate
+        momentum=0.9,  
+        weight_decay=0.0005,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=8,
+        train_set='full',
+        val_set='full',
+        fcn16s_pretrained_model=None,
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-132513/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-132513/mean_l.npy',
+    ),
 }
 
 

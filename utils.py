@@ -217,11 +217,14 @@ def visualize_colorization(lbl_pred, lbl_true, img_orig, im_l, gmm, mean_l):
     im_pred = colorize_image_hc(lbl_pred, im_l, gmm, mean_l, 
                                       method='max')
     tiled_img = np.concatenate(
-                    (img_orig, 
+                    (np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8),
+                     img_orig, 
                      np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8),
                      im_rgb, 
                      np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8), 
-                     im_pred), axis=1)
+                     im_pred,
+                     np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8)), 
+                    axis=1)
     
     return skimage.img_as_ubyte(tiled_img)
 

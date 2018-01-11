@@ -241,6 +241,43 @@ class FCN32sColor(nn.Module):
 
         return h
 
+    def copy_params_from_vgg16(self, vgg16):
+        features = [
+            self.conv1_1, self.relu1_1,
+            self.conv1_2, self.relu1_2,
+            self.pool1,
+            self.conv2_1, self.relu2_1,
+            self.conv2_2, self.relu2_2,
+            self.pool2,
+            self.conv3_1, self.relu3_1,
+            self.conv3_2, self.relu3_2,
+            self.conv3_3, self.relu3_3,
+            self.pool3,
+            self.conv4_1, self.relu4_1,
+            self.conv4_2, self.relu4_2,
+            self.conv4_3, self.relu4_3,
+            self.pool4,
+            self.conv5_1, self.relu5_1,
+            self.conv5_2, self.relu5_2,
+            self.conv5_3, self.relu5_3,
+            self.pool5,
+        ]
+        for l1, l2 in zip(vgg16.features, features):
+            if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
+                import pdb; pdb.set_trace()  # breakpoint 0c3c8a39 //
+
+                # for colorization, conv_1_1 input 3 channels must be collapsed to single channel
+
+                assert l1.weight.size() == l2.weight.size()
+                assert l1.bias.size() == l2.bias.size()
+                l2.weight.data = l1.weight.data
+                l2.bias.data = l1.bias.data
+        for i, name in zip([0, 3], ['fc6', 'fc7']):
+            l1 = vgg16.classifier[i]
+            l2 = getattr(self, name)
+            l2.weight.data = l1.weight.data.view(l2.weight.size())
+            l2.bias.data = l1.bias.data.view(l2.bias.size())
+
 
 
 
@@ -712,4 +749,37 @@ class FCN8sColor(nn.Module):
                 l2.bias.data.copy_(l1.bias.data)
 
 
+    def copy_params_from_vgg16(self, vgg16):
+        # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/models/fcn8s.py
+        features = [
+            self.conv1_1, self.relu1_1,
+            self.conv1_2, self.relu1_2,
+            self.pool1,
+            self.conv2_1, self.relu2_1,
+            self.conv2_2, self.relu2_2,
+            self.pool2,
+            self.conv3_1, self.relu3_1,
+            self.conv3_2, self.relu3_2,
+            self.conv3_3, self.relu3_3,
+            self.pool3,
+            self.conv4_1, self.relu4_1,
+            self.conv4_2, self.relu4_2,
+            self.conv4_3, self.relu4_3,
+            self.pool4,
+            self.conv5_1, self.relu5_1,
+            self.conv5_2, self.relu5_2,
+            self.conv5_3, self.relu5_3,
+            self.pool5,
+        ]
+        for l1, l2 in zip(vgg16.features, features):
+            if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
+                assert l1.weight.size() == l2.weight.size()
+                assert l1.bias.size() == l2.bias.size()
+                l2.weight.data.copy_(l1.weight.data)
+                l2.bias.data.copy_(l1.bias.data)
+        for i, name in zip([0, 3], ['fc6', 'fc7']):
+            l1 = vgg16.classifier[i]
+            l2 = getattr(self, name)
+            l2.weight.data.copy_(l1.weight.data.view(l2.weight.size()))
+            l2.bias.data.copy_(l1.bias.data.view(l2.bias.size()))
 
