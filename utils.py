@@ -66,9 +66,10 @@ def colorize_image_hc(labels, img, gmm, mean_l, method='mean'):
 
         Inputs
         ------
-        labels   -   Predicted labels as float numpy array 
-        img      -   Grayscale image as float numpy array
+        labels   -   Predicted labels as float numpy array (HxWxk)
+        img      -   Grayscale mean-subtracted image as float numpy array
         gmm      -   GMM model of Hue/Chroma
+        mean_l   -   To add back the mean to the input image
         method   -   
 
         Output
@@ -99,7 +100,7 @@ def colorize_image_hc(labels, img, gmm, mean_l, method='mean'):
         # expectation over GMM centroids
         im_hc = np.tensordot(labels, hc_means, (2,0))
     elif method == 'max':
-        # argmax CMM centroid
+        # argmax GMM centroid
         label_id = np.argmax(labels, axis=2)
         im_hc = hc_means[label_id]
 
@@ -200,6 +201,28 @@ def visualize_segmentation(lbl_pred, lbl_true, img, im_l, \
                  im_gray_rgb, im_lbl_pred, 
                  np.zeros([img.shape[0],10,3])), 
                 axis=1)
+    return skimage.img_as_ubyte(tiled_img)
+
+
+def visualize_colorization(lbl_pred, lbl_true, img_orig, im_l, gmm, mean_l):
+    '''
+        Returns a visualization of predictions and ground-truth labels
+        [rgb_img, true_labels | grayscale_img, pred_labels]
+    '''    
+    # ground-truth GMM posteriors
+    im_rgb = colorize_image_hc(lbl_true, im_l, gmm, mean_l)
+
+    # predictions from colorizer network
+    lbl_pred = lbl_pred.transpose((1,2,0))
+    im_pred = colorize_image_hc(lbl_pred, im_l, gmm, mean_l, 
+                                      method='max')
+    tiled_img = np.concatenate(
+                    (img_orig, 
+                     np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8),
+                     im_rgb, 
+                     np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8), 
+                     im_pred), axis=1)
+    
     return skimage.img_as_ubyte(tiled_img)
 
 

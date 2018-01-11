@@ -98,7 +98,7 @@ class ColorizeImageNet(data.Dataset):
         self.files = collections.defaultdict(list)
         self.num_hc_bins = num_hc_bins
         self.hc_bins = np.linspace(0,1,num=num_hc_bins) # Hue and chroma bins (fixed)
-        self.im_size = 400.0 # scale larger side of image to this value
+        self.im_size = (256, 256) # scale images to this size
         self.bins = bins
         self.set = set
         self.gmm = []  # cached to disk, re-loaded if existing
@@ -173,12 +173,13 @@ class ColorizeImageNet(data.Dataset):
                 img = PIL.Image.open(img_file)
 
         # scale largest side to 500 px, maintain aspect ratio
-        scale_factor = self.im_size/np.max(img.size)
-        if scale_factor != 1:
-            scaled_dim = ( np.round(scale_factor*img.size[0]).astype(np.int32), \
-                          np.round(scale_factor*img.size[1]).astype(np.int32) )
-            img = img.resize(scaled_dim, PIL.Image.BILINEAR)
+        # scale_factor = self.im_size/np.max(img.size)
+        # if scale_factor != 1:
+        #     scaled_dim = ( np.round(scale_factor*img.size[0]).astype(np.int32), \
+        #                   np.round(scale_factor*img.size[1]).astype(np.int32) )
+        #     img = img.resize(scaled_dim, PIL.Image.BILINEAR)
 
+        img = img.resize(self.im_size, PIL.Image.BILINEAR)
         img = np.array(img, dtype=np.uint8)
 
         # Colorspace conversion: 
@@ -270,11 +271,11 @@ class ColorizeImageNet(data.Dataset):
     # -----------------------------------------------------------------------------
     def rescale(self, img):
     # -----------------------------------------------------------------------------
-        scale_factor = self.im_size/np.max(img.size) # img is PIL.Image
-        if scale_factor != 1:
-            scaled_dim = ( np.round(scale_factor*img.size[0]).astype(np.int32), \
-                          np.round(scale_factor*img.size[1]).astype(np.int32) )
-            img = img.resize(scaled_dim, PIL.Image.BILINEAR)
+        # scale_factor = self.im_size/np.max(img.size) # img is PIL.Image
+        # if scale_factor != 1:
+        #     scaled_dim = ( np.round(scale_factor*img.size[0]).astype(np.int32), \
+        #                   np.round(scale_factor*img.size[1]).astype(np.int32) )
+        img = img.resize(self.im_size, PIL.Image.BILINEAR)
         img = np.array(img, dtype=np.uint8) # PIL.Image to numpy array
         return img
 

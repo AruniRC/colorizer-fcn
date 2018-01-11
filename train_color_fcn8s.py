@@ -3,6 +3,7 @@ import datetime
 import os
 import os.path as osp
 import torch
+import torch.nn.parallel
 import yaml
 import numpy as np
 # import matplotlib.pyplot as plt
@@ -82,7 +83,7 @@ def main():
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=train_set, img_lowpass=img_lowpass, 
         gmm_path=gmm_path, mean_l_path=mean_l_path),
-        batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
+        batch_size=5, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
@@ -117,6 +118,7 @@ def main():
 
     if cuda:
         model = model.cuda()
+        # model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3, 4]).cuda()
 
 
     # -----------------------------------------------------------------------------

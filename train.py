@@ -4,7 +4,6 @@ import os
 import os.path as osp
 import shutil
 
-# import fcn
 import numpy as np
 import PIL.Image
 import pytz
@@ -15,7 +14,6 @@ import torch.nn.functional as F
 import tqdm
 
 import utils
-# import torchfcn
 import gc
 
 
@@ -171,30 +169,36 @@ class Trainer(object):
 
             # Visualization
             imgs = data.data.cpu()
+
             if self.train_loader.dataset.bins == 'one-hot':
                 # visualize only hue predictions
                 lbl_pred = score_hue.data.max(1)[1].cpu().numpy()[:, :, :]
                 lbl_true = target_hue.data.cpu()
                 del score_hue, target_hue, score_chroma, target_chroma
+
             elif self.train_loader.dataset.bins == 'soft':
                 lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
                 _, lbl_true = target.data.max(dim=3) # EDIT - .data
                 lbl_true = lbl_true.cpu()
-                del target, score
+
+                if len(visualizations) < 9:
+                    # HACK: use 1st image from each batch to visualize
+                    img = \
+                        PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
+                    img = self.val_loader.dataset.rescale(img) # orig RGB image
+                    
+                    viz = utils.visualize_colorization(
+                            lbl_pred=score.data[0].cpu().numpy(), 
+                            lbl_true=target.data[0].cpu().numpy(), 
+                            img_orig=img, im_l=np.squeeze(imgs[0].numpy()), 
+                            gmm=self.val_loader.dataset.gmm, 
+                            mean_l=self.val_loader.dataset.mean_l)                    
+                    visualizations.append(viz)
+                # del target, score
+
 
             lbl_pred = lbl_pred.squeeze()
             lbl_true = np.squeeze(lbl_true.numpy())
-            
-            if len(visualizations) < 9:
-                assert imgs.size()[0]==1   # HACK: assumes 1 image in a batch!
-                img = \
-                    PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
-                img = self.val_loader.dataset.rescale(img) # orig RGB image
-                img_l = np.squeeze(imgs.numpy()) + self.val_loader.dataset.mean_l
-                viz = utils.visualize_segmentation(lbl_pred=lbl_pred,
-                        lbl_true=lbl_true, img=img, 
-                        im_l=img_l, n_class=n_class)
-                visualizations.append(viz)
 
             label_trues.append(lbl_true)
             label_preds.append(lbl_pred)
