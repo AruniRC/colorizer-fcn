@@ -19,6 +19,7 @@ from config import configurations
 
 '''
     Train FCN32s initialized from the PyTorch-released pre-trained VGG-16.
+        python -W ignore train_color_fcn32s_imagenet.py -c 21 -b soft -k 128
 '''
 
 
@@ -28,7 +29,7 @@ here = osp.dirname(osp.abspath(__file__))
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpu', type=int, required=True)
+    parser.add_argument('-g', '--gpu', type=int)
     parser.add_argument('-c', '--config', type=int, default=1,
                         choices=configurations.keys())
     parser.add_argument('-b', '--binning', default='soft', 
@@ -84,21 +85,25 @@ def main():
         mean_l_path = cfg['mean_l_path']
     else:
         mean_l_path = None
+    if 'im_size' in cfg.keys():
+        im_size = cfg['im_size']
+    else:
+        im_size = (256, 256)
 
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=train_set, img_lowpass=img_lowpass,
+        set=train_set, img_lowpass=img_lowpass, im_size = im_size,
         gmm_path=gmm_path, mean_l_path=mean_l_path),
-        batch_size=5, shuffle=False, **kwargs) # DEBUG: set shuffle False
+        batch_size=cfg['batch_size'], shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=val_set, img_lowpass=img_lowpass,
+        set=val_set, img_lowpass=img_lowpass, im_size = im_size,
         gmm_path=gmm_path, mean_l_path=mean_l_path),
         batch_size=1, shuffle=False, **kwargs)
 
@@ -107,25 +112,35 @@ def main():
     # 2. model
     # -----------------------------------------------------------------------------
     model = models.FCN32sColor(n_class=args.numbins, bin_type=args.binning)
+
     if args.model_path:
         checkpoint = torch.load(args.model_path)        
         model.load_state_dict(checkpoint['model_state_dict'])
+
+    if resume:
+        if cuda:
+            model.cuda()
+            # model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3, 4]).cuda()
+
+        checkpoint = torch.load(resume)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        start_epoch = checkpoint['epoch']
+        start_iteration = checkpoint['iteration']
     else:
-        if resume:
-            checkpoint = torch.load(resume)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            start_epoch = checkpoint['epoch']
-            start_iteration = checkpoint['iteration']
-        else:
-            # init with pre-trained VGG-16 (collapse 3-channel input to single channel)
-            vgg16 = torchvision.models.vgg16(pretrained=True)
-            model.copy_params_from_vgg16(vgg16)
+        # init with pre-trained VGG-16 (collapse 3-channel input to single channel)
+        # vgg16 = torchvision.models.vgg16(pretrained=True)
+        # model.copy_params_from_vgg16(vgg16)
+        pass
+
+
+    if cuda:
+        model = model.cuda()
+        # model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3, 4]).cuda()
 
     start_epoch = 0
     start_iteration = 0
 
-    if cuda:
-        model = model.cuda()
+
 
 
     # -----------------------------------------------------------------------------
@@ -140,7 +155,8 @@ def main():
 				        weight_decay=cfg['weight_decay'])
     	elif cfg['optim'].lower()=='adam':
     		optim = torch.optim.Adam(params,
-				        lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+				        lr=cfg['lr'], 
+                        weight_decay=cfg['weight_decay'])
     	else:
     		raise NotImplementedError('Optimizers: SGD or Adam')
     else:
@@ -156,10 +172,12 @@ def main():
     # -----------------------------------------------------------------------------
     # Sanity-check: forward pass with a single sample
     # -----------------------------------------------------------------------------
-    DEBUG = True
+    DEBUG = False
     if DEBUG:
         dataiter = iter(val_loader)
         img, label = dataiter.next()
+        print 'Image: ' + str(img.size())     # batch_size x channels x h x w
+        print 'Label: ' + str(label.size())   # batch_size x h x w x channels
         model.eval()
         if val_loader.dataset.bins == 'one-hot':
             from torch.autograd import Variable
@@ -186,8 +204,6 @@ def main():
             # TODO: assertions
             # del inputs, outputs
         model.train()    
-        import pdb; pdb.set_trace()  # breakpoint 5f8065d0 //
-
     else:
         pass
 
