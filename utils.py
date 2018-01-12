@@ -26,10 +26,15 @@ def plot_log_csv(log_path):
 	dat = np.genfromtxt(log_path, names=True, 
 						delimiter=',', autostrip=True)
 
-	# train_loss =  dat['trainloss']
-	# train_loss_sel = ~np.isnan(train_loss)
-	# train_loss = train_loss[train_loss_sel]
-	# iter_train_loss = dat['iteration'][train_loss_sel]
+	train_loss =  dat['trainloss']
+	train_loss_sel = ~np.isnan(train_loss)
+	train_loss = train_loss[train_loss_sel]
+	iter_train_loss = dat['iteration'][train_loss_sel]
+
+    train_mean_iu = dat['trainmean_iu']
+    train_mean_iu_sel = ~np.isnan(train_mean_iu)
+    train_mean_iu = train_mean_iu[train_mean_iu_sel]
+    iter_train_mean_iu = dat['iteration'][train_mean_iu_sel]
 
 	val_loss =  dat['validloss']
 	val_loss_sel = ~np.isnan(val_loss)
@@ -41,21 +46,53 @@ def plot_log_csv(log_path):
 	mean_iu = mean_iu[mean_iu_sel]
 	iter_mean_iu = dat['iteration'][mean_iu_sel]
 
-	f = plt.figure()
-	plt.plot(iter_mean_iu, mean_iu, label='val')
-	plt.xlabel('iteration')
-	plt.ylabel('mean IoU')
-	plt.grid()
-	plt.legend()
-	plt.savefig(osp.join(log_dir, 'val_mean_iou.png'), bbox_inches='tight')
+    fig, ax = plt.subplots(nrows=2, ncols=2)
 
-	f = plt.figure()
-	plt.plot(iter_val_loss, val_loss, label='val')
-	plt.xlabel('iteration')
-	plt.ylabel('KLdiv loss')
-	plt.grid()
-	plt.legend()
-	plt.savefig(osp.join(log_dir, 'val_loss.png'), bbox_inches='tight')
+    plt.subplot(2, 2, 1)
+    plt.plot(iter_train_mean_iu, train_mean_iu, label='train')
+    plt.ylabel('mean IoU')
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+
+    plt.subplot(2, 2, 2)
+    plt.plot(iter_mean_iu, mean_iu, label='val')
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+
+    plt.subplot(2, 2, 3)
+    plt.plot(iter_train_loss, train_loss, label='train')
+    plt.xlabel('iteration')
+    plt.ylabel('loss')
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+
+    plt.subplot(2, 2, 4)
+    plt.plot(iter_val_loss, val_loss, label='val')
+    plt.xlabel('iteration')
+    plt.grid()
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(osp.join(log_dir, 'log_plots.png'), bbox_inches='tight')
+
+	# f = plt.figure()
+	# plt.plot(iter_mean_iu, mean_iu, label='val')
+	# plt.xlabel('iteration')
+	# plt.ylabel('mean IoU')
+	# plt.grid()
+	# plt.legend()
+	# plt.savefig(osp.join(log_dir, 'val_mean_iou.png'), bbox_inches='tight')
+
+	# f = plt.figure()
+	# plt.plot(iter_val_loss, val_loss, label='val')
+	# plt.xlabel('iteration')
+	# plt.ylabel('KLdiv loss')
+	# plt.grid()
+	# plt.legend()
+	# plt.savefig(osp.join(log_dir, 'val_loss.png'), bbox_inches='tight')
 
 
 
@@ -210,12 +247,13 @@ def visualize_colorization(lbl_pred, lbl_true, img_orig, im_l, gmm, mean_l):
         [rgb_img, true_labels | grayscale_img, pred_labels]
     '''    
     # ground-truth GMM posteriors
-    im_rgb = colorize_image_hc(lbl_true, im_l, gmm, mean_l)
+    im_rgb = colorize_image_hc(lbl_true, im_l, gmm, mean_l,
+                                    method='max')
 
     # predictions from colorizer network
     lbl_pred = lbl_pred.transpose((1,2,0))
     im_pred = colorize_image_hc(lbl_pred, im_l, gmm, mean_l, 
-                                      method='max')
+                                    method='max')
     tiled_img = np.concatenate(
                     (np.zeros([im_rgb.shape[0],10,3], dtype=np.uint8),
                      img_orig, 
