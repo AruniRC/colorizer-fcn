@@ -72,7 +72,7 @@ class ColorizeImageNet(data.Dataset):
     # -----------------------------------------------------------------------------
     def __init__(self, root, log_dir = '.', split='train', set='small',
                              num_hc_bins=32, bins='one-hot', img_lowpass=None, 
-                             im_size=(400, 400), gmm_path=None, mean_l_path=None):
+                             im_size=(256, 256), gmm_path=None, mean_l_path=None):
     # -----------------------------------------------------------------------------
         '''
             Parameters
@@ -98,7 +98,7 @@ class ColorizeImageNet(data.Dataset):
         self.files = collections.defaultdict(list)
         self.num_hc_bins = num_hc_bins
         self.hc_bins = np.linspace(0,1,num=num_hc_bins) # Hue and chroma bins (fixed)
-        self.im_size = (256, 256) # scale images to this size
+        self.im_size = im_size # scale images to this size
         self.bins = bins
         self.set = set
         self.gmm = []  # cached to disk, re-loaded if existing
