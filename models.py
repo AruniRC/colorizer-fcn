@@ -264,14 +264,17 @@ class FCN32sColor(nn.Module):
         ]
         for l1, l2 in zip(vgg16.features, features):
             if isinstance(l1, nn.Conv2d) and isinstance(l2, nn.Conv2d):
-                import pdb; pdb.set_trace()  # breakpoint 0c3c8a39 //
+                if l1.weight.size()[1]==3 and l2.weight.size()[1] == 1:
+                    # for colorization, vgg16's conv_1_1 input 3 channels   
+                    # must be collapsed into a single channel
+                    l2.weight.data = l1.weight.data.mean(1, keepdim=True)
+                    l2.bias.data = l1.bias.data
+                else:
+                    assert l1.weight.size() == l2.weight.size()
+                    assert l1.bias.size() == l2.bias.size()
+                    l2.weight.data = l1.weight.data
+                    l2.bias.data = l1.bias.data
 
-                # for colorization, conv_1_1 input 3 channels must be collapsed to single channel
-
-                assert l1.weight.size() == l2.weight.size()
-                assert l1.bias.size() == l2.bias.size()
-                l2.weight.data = l1.weight.data
-                l2.bias.data = l1.bias.data
         for i, name in zip([0, 3], ['fc6', 'fc7']):
             l1 = vgg16.classifier[i]
             l2 = getattr(self, name)

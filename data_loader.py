@@ -72,7 +72,7 @@ class ColorizeImageNet(data.Dataset):
     # -----------------------------------------------------------------------------
     def __init__(self, root, log_dir = '.', split='train', set='small',
                              num_hc_bins=32, bins='one-hot', img_lowpass=None, 
-                             gmm_path=None, mean_l_path=None):
+                             im_size=(400, 400), gmm_path=None, mean_l_path=None):
     # -----------------------------------------------------------------------------
         '''
             Parameters
@@ -349,22 +349,4 @@ class ColorizeImageNet(data.Dataset):
             raise  ValueError('Channels: `hue_chroma` or `lightness`')
 
 
-    # -----------------------------------------------------------------------------
-    def pred_to_hc(self, pred_hue, pred_chroma):
-    # -----------------------------------------------------------------------------
-        '''
-            TODO
-            Convert the predicted labels of Hue and Chroma into actual values, 
-            using bin centers.
 
-            Parameters
-            ----------
-            pred_hue    - Predicted Hue map, integer labels. 
-            pred_chroma - Predicted Chroma map, integer labels. 
-    
-            Returns
-            -------
-            im_hue, im_chroma
-
-        '''
-        bin_centers = (self.hc_bins[:-1] + self.hc_bins[1:])/2.0

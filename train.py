@@ -182,19 +182,35 @@ class Trainer(object):
                 lbl_true = lbl_true.cpu()
 
                 if len(visualizations) < 9:
-                    # HACK: use 1st image from each batch to visualize
-                    img = \
-                        PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
-                    img = self.val_loader.dataset.rescale(img) # orig RGB image
-                    
-                    viz = utils.visualize_colorization(
-                            lbl_pred=score.data[0].cpu().numpy(), 
-                            lbl_true=target.data[0].cpu().numpy(), 
-                            img_orig=img, im_l=np.squeeze(imgs[0].numpy()), 
-                            gmm=self.val_loader.dataset.gmm, 
-                            mean_l=self.val_loader.dataset.mean_l)                    
-                    visualizations.append(viz)
-                # del target, score
+                    # HACK: use 1st image from each batch to visualize    
+
+                    if score.data.size()[0] > 9:
+
+                        for i in range(9):
+                            img = \
+                                PIL.Image.open(self.val_loader.dataset.files['val'][i]) 
+                            img = self.val_loader.dataset.rescale(img) # orig RGB image
+                            viz = utils.visualize_colorization(
+                                    lbl_pred=score.data[i].cpu().numpy(), 
+                                    lbl_true=target.data[i].cpu().numpy(), 
+                                    img_orig=img, im_l=np.squeeze(imgs[i].numpy()), 
+                                    gmm=self.val_loader.dataset.gmm, 
+                                    mean_l=self.val_loader.dataset.mean_l)                    
+                            visualizations.append(viz)
+
+                    else:
+                        # HACK: batch-size 1
+                        img = \
+                            PIL.Image.open(self.val_loader.dataset.files['val'][batch_idx]) 
+                        img = self.val_loader.dataset.rescale(img) # orig RGB image
+                        viz = utils.visualize_colorization(
+                                lbl_pred=score.data[0].cpu().numpy(), 
+                                lbl_true=target.data[0].cpu().numpy(), 
+                                img_orig=img, im_l=np.squeeze(imgs[0].numpy()), 
+                                gmm=self.val_loader.dataset.gmm, 
+                                mean_l=self.val_loader.dataset.mean_l)                    
+                        visualizations.append(viz)
+                del target, score
 
 
             lbl_pred = lbl_pred.squeeze()
@@ -360,6 +376,12 @@ class Trainer(object):
     def train(self):
     # -----------------------------------------------------------------------------
         max_epoch = int(math.ceil(1. * self.max_iter / len(self.train_loader)))
+        print 'Number of iters in an epoch: %d' % len(self.train_loader)
+        print 'Total epochs: %d' % max_epoch
+
+        import pdb; pdb.set_trace()  # breakpoint 18006d95 //
+        
+
         for epoch in tqdm.trange(self.epoch, max_epoch,
                                  desc='Train', ncols=80):
             self.epoch = epoch
