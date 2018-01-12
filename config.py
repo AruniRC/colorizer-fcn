@@ -227,19 +227,81 @@ configurations = {
         fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-016_VCS-8b659a0_TIME-20180102-211836/model_best.pth.tar',
     ),
 
+    # ---------------------------------------------------------------------------------------
+    # train FCN32s, initialized with pre-trained vgg16
     21: dict(
-        max_iteration=1.0e+6,
-        lr=1.0e-5, # changed learning rate
+        max_iteration=3e+5,
+        lr=1.0e-7, # changed learning rate
         momentum=0.9,  
         weight_decay=0.0005,
+        batch_size=8,
         interval_validate=50,
         optim='Adam',
-        img_lowpass=8,
+        img_lowpass=None,
         train_set='full',
-        val_set='full',
-        fcn16s_pretrained_model=None,
-        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-132513/gmm.pkl',
-        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-132513/mean_l.npy',
+        val_set='small',
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/mean_l.npy',
+    ),
+
+    22: dict(
+        max_iteration=3e+5,
+        lr=1.0e-8, # changed learning rate
+        momentum=0.9,  
+        weight_decay=0.0005,
+        batch_size=8,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=None,
+        train_set='full',
+        val_set='small',
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/mean_l.npy',
+    ),
+
+    23: dict(
+        max_iteration=3e+5,
+        lr=1.0e-9, # changed learning rate
+        momentum=0.9,  
+        weight_decay=0.0005,
+        batch_size=8,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=None,
+        train_set='full',
+        val_set='small',
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/mean_l.npy',
+    ),
+
+    24: dict(
+        max_iteration=3e+5,
+        lr=1.0e-10, # changed learning rate
+        momentum=0.9,  
+        weight_decay=0.0005,
+        batch_size=8,
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=None,
+        train_set='full',
+        val_set='small',
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-021_TIME-20180111-140735/mean_l.npy',
+    ),
+
+    # ---------------------------------------------------------------------------------------
+    # FCN32s, full ImageNet, 128 color bins
+    25: dict(
+        max_iteration=3e+5,
+        lr=1.0e-6,  
+        momentum=0.9,          # not used (Adam)
+        weight_decay=0.0005,   # not used (Adam)
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=4,
+        im_size=(400,400),
+        train_set='full',
+        val_set='small',
     ),
 }
 
