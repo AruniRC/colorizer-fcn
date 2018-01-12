@@ -17,31 +17,6 @@ import data_loader
 from config import configurations
 
 
-def git_hash():
-    cmd = 'git log -n 1 --pretty="%h"'
-    hash = subprocess.check_output(shlex.split(cmd)).strip()
-    return hash
-
-
-def get_log_dir(model_name, config_id, cfg, verbose=True):
-    # load config
-    name = 'MODEL-%s_CFG-%03d' % (model_name, config_id)
-    if verbose:
-	    for k, v in cfg.items():
-	        v = str(v)
-	        if '/' in v:
-	            continue
-	        name += '_%s-%s' % (k.upper(), v)
-    now = datetime.datetime.now(pytz.timezone('US/Eastern'))
-    name += '_VCS-%s' % git_hash()
-    name += '_TIME-%s' % now.strftime('%Y%m%d-%H%M%S')
-    # TODO - create out at custom location
-    log_dir = osp.join(here, 'logs', name)
-    if not osp.exists(log_dir):
-        os.makedirs(log_dir)
-    with open(osp.join(log_dir, 'config.yaml'), 'w') as f:
-        yaml.safe_dump(cfg, f, default_flow_style=False)
-    return log_dir
 
 here = osp.dirname(osp.abspath(__file__))
 
@@ -52,7 +27,7 @@ def main():
     parser.add_argument('-g', '--gpu', type=int, required=True)
     parser.add_argument('-c', '--config', type=int, default=1,
                         choices=configurations.keys())
-    parser.add_argument('-b', '--binning', default='one-hot', 
+    parser.add_argument('-b', '--binning', default='soft', 
                         choices=('soft','one-hot'))
     parser.add_argument('-k', '--numbins', type=int, default=32)
     parser.add_argument('-d', '--dataset_path', 
@@ -97,19 +72,34 @@ def main():
     else:
         val_set = 'small'
 
+    if 'gmm_path' in cfg.keys():
+        gmm_path = cfg['gmm_path']
+    else:
+        gmm_path = None
+    if 'mean_l_path' in cfg.keys():
+        mean_l_path = cfg['mean_l_path']
+    else:
+        mean_l_path = None
+    if 'im_size' in cfg.keys():
+        im_size = cfg['im_size']
+    else:
+        im_size = (256, 256)
+
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=train_set, img_lowpass=img_lowpass),
+        set=train_set, img_lowpass=img_lowpass, im_size = im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path),
         batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=val_set, img_lowpass=img_lowpass),
+        set=val_set, img_lowpass=img_lowpass, im_size = im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path),
         batch_size=1, shuffle=False, **kwargs)
 
 
@@ -161,35 +151,39 @@ def main():
     # -----------------------------------------------------------------------------
     # Sanity-check: forward pass with a single sample
     # -----------------------------------------------------------------------------
-    # dataiter = iter(val_loader)
-    # img, label = dataiter.next()
-    # model.eval()
-    # if val_loader.dataset.bins == 'one-hot':
-    #     from torch.autograd import Variable
-    #     inputs = Variable(img)
-    #     if cuda:
-    #         inputs = inputs.cuda()
-    #     outputs = model(inputs)
-    #     assert len(outputs)==2, \
-    #         'Network should predict a 2-tuple: hue-map and chroma-map.'
-    #     hue_map = outputs[0].data
-    #     chroma_map = outputs[1].data
-    #     assert hue_map.size() == chroma_map.size(), \
-    #         'Outputs should have same dimensions.'
-    #     sz_h = hue_map.size()
-    #     sz_im = img.size()
-    #     assert sz_im[2]==sz_h[2] and sz_im[3]==sz_h[3], \
-    #         'Spatial dims should match for input and output.'
-    # elif val_loader.dataset.bins == 'soft':
-    #     from torch.autograd import Variable
-    #     inputs = Variable(img)
-    #     if cuda:
-    #     	inputs = inputs.cuda()
-    #     outputs = model(inputs)
-    #     # TODO: assertions
-    #     # del inputs, outputs
+    DEBUG = True
+    if DEBUG:
+        dataiter = iter(val_loader)
+        img, label = dataiter.next()
+        model.eval()
+        if val_loader.dataset.bins == 'one-hot':
+            from torch.autograd import Variable
+            inputs = Variable(img)
+            if cuda:
+                inputs = inputs.cuda()
+            outputs = model(inputs)
+            assert len(outputs)==2, \
+                'Network should predict a 2-tuple: hue-map and chroma-map.'
+            hue_map = outputs[0].data
+            chroma_map = outputs[1].data
+            assert hue_map.size() == chroma_map.size(), \
+                'Outputs should have same dimensions.'
+            sz_h = hue_map.size()
+            sz_im = img.size()
+            assert sz_im[2]==sz_h[2] and sz_im[3]==sz_h[3], \
+                'Spatial dims should match for input and output.'
+        elif val_loader.dataset.bins == 'soft':
+            from torch.autograd import Variable
+            inputs = Variable(img)
+            if cuda:
+            	inputs = inputs.cuda()
+            outputs = model(inputs)
+            # TODO: assertions
+            # del inputs, outputs
 
-    # model.train()    
+        model.train()    
+    else:
+        pass
 
 
     # -----------------------------------------------------------------------------
@@ -208,6 +202,32 @@ def main():
     trainer.epoch = start_epoch
     trainer.iteration = start_iteration
     trainer.train()
+
+
+
+def git_hash():
+    cmd = 'git log -n 1 --pretty="%h"'
+    hash = subprocess.check_output(shlex.split(cmd)).strip()
+    return hash
+
+
+def get_log_dir(model_name, config_id, cfg, verbose=True):
+    # load config
+    name = 'MODEL-%s_CFG-%03d' % (model_name, config_id)
+    if verbose:
+        for k, v in cfg.items():
+            v = str(v)
+            if '/' in v:
+                continue
+            name += '_%s-%s' % (k.upper(), v)
+    now = datetime.datetime.now(pytz.timezone('US/Eastern'))
+    name += '_TIME-%s' % now.strftime('%Y%m%d-%H%M%S')
+    log_dir = osp.join(here, 'logs', name)
+    if not osp.exists(log_dir):
+        os.makedirs(log_dir)
+    with open(osp.join(log_dir, 'config.yaml'), 'w') as f:
+        yaml.safe_dump(cfg, f, default_flow_style=False)
+    return log_dir
 
 
 if __name__ == '__main__':
