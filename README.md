@@ -25,8 +25,8 @@ TODO
 
 It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this colorfulness.
 
-1-100 |  1k-100 |  1k-100  | 10k-100  | 100k-100 | 200k-100
-:----:|:-------:|:--------:|:--------:|:--------:|:--------:
+1-100 |   1k-100  | 10k-100  | 100k-100 | 200k-100 |
+:----:|:---------:|:--------:|:--------:|:--------:
 ![](figures/montage-1-100.jpg)|  ![](figures/montage-1k-100.jpg) | ![](figures/montage-10k-100.jpg) | ![](figures/montage-100k-100.jpg) | ![](figures/montage-200k-100.jpg)
 
 Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet filenames, sorted by their RGB variance. The resultant text file should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
