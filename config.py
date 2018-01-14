@@ -299,9 +299,25 @@ configurations = {
         interval_validate=50,
         optim='Adam',
         img_lowpass=4,
-        im_size=(400,400),
+        im_size=(256,256),
         train_set='full',
         val_set='small',
+    ),
+
+    # validated - doesn't work!!!
+    26: dict(
+        max_iteration=3e+5,
+        lr=1.0e-5,  
+        momentum=0.9,          # not used (Adam)
+        weight_decay=0.0005,   # not used (Adam)
+        interval_validate=50,
+        optim='Adam',
+        img_lowpass=4,
+        im_size=(256,256),
+        train_set='full',
+        val_set='small',
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346//mean_l.npy',
     ),
 }
 

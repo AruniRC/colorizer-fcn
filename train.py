@@ -377,10 +377,7 @@ class Trainer(object):
     # -----------------------------------------------------------------------------
         max_epoch = int(math.ceil(1. * self.max_iter / len(self.train_loader)))
         print 'Number of iters in an epoch: %d' % len(self.train_loader)
-        print 'Total epochs: %d' % max_epoch
-
-        import pdb; pdb.set_trace()  # breakpoint 18006d95 //
-        
+        print 'Total epochs: %d' % max_epoch        
 
         for epoch in tqdm.trange(self.epoch, max_epoch,
                                  desc='Train', ncols=80):

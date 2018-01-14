@@ -90,7 +90,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=train_set, img_lowpass=img_lowpass, im_size = im_size,
+        set=train_set, img_lowpass=img_lowpass, im_size=im_size,
         gmm_path=gmm_path, mean_l_path=mean_l_path),
         batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
@@ -98,7 +98,7 @@ def main():
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=val_set, img_lowpass=img_lowpass, im_size = im_size,
+        set=val_set, img_lowpass=img_lowpass, im_size=im_size,
         gmm_path=gmm_path, mean_l_path=mean_l_path),
         batch_size=1, shuffle=False, **kwargs)
 
@@ -156,6 +156,8 @@ def main():
         dataiter = iter(val_loader)
         img, label = dataiter.next()
         model.eval()
+        print 'Labels: ' + str(label.size()) # batchSize x num_class
+        print 'Input: ' + str(img.size())    # batchSize x 1 x (im_size)
         if val_loader.dataset.bins == 'one-hot':
             from torch.autograd import Variable
             inputs = Variable(img)
@@ -180,6 +182,7 @@ def main():
             outputs = model(inputs)
             # TODO: assertions
             # del inputs, outputs
+        import pdb; pdb.set_trace()  # breakpoint 0632fd52 //
 
         model.train()    
     else:
