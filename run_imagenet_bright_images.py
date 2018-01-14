@@ -42,9 +42,19 @@ def main():
    
     print batch_sz
 
-    # TODO - save a few images
+    
     sorted_filenames = np.load(osp.join(exp_folder, 'files_sorted.npy'))
     sorted_vals = np.load(osp.join(exp_folder, 'values_sorted.npy'))
+
+
+    # 
+    splitter = lambda x: '/'.join(x.split('/')[-3:])
+    splitter_fun = np.vectorize(splitter)
+    filenames_out = splitter_fun(sorted_filenames)
+    np.savetxt(osp.join(exp_folder, 'files-rgbvar.txt'), 
+               filenames_out, fmt='%s')
+
+
 
     # plot values
     f = plt.figure()

@@ -17,12 +17,29 @@ Experiment settings such as learning rates are defined in `config.py`, each sett
 The training metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. The loss and mean IoU on the validation set can be visualized by _manually_ calling `plot_log_csv(log_file_path)` from the `utils` module. Intermediate clustering results on 9 images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
 
 
+#### Data setup
+TODO
+
+
+#### Sorted colorful images from ImageNet
+
+It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this colorfulness.
+
+1-100 |  1k-100 |  1k-100  | 10k-100  | 100k-100 | 200k-100
+:----:|:-------:|:--------:|:--------:|:--------:|:--------:
+![](figures/montage-1-100.jpg)|  ![](figures/montage-1k-100.jpg) | ![](figures/montage-10k-100.jpg) | ![](figures/montage-100k-100.jpg) | ![](figures/montage-200k-100.jpg)
+
+Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet filenames, sorted by their RGB variance. The resultant text file should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
+
 
 ### Experiments
 
 
 
-### Experiments - prototyping
+
+---
+
+### Experiments - first prototyping
 
 * **Tiny dataset** - sanity-checks by over-fitting an FCN-32s model from scratch on a dataset of 9 images. The command to train this network is `python train_color_fcn32s.py -g 0 -c 7 -b soft -k 32`. This trains the network to predict "color labels" (32 GMM clusters in Hue-Chroma space) at each pixel given the single-channel Lightness image as input. The KL-divergence loss (PyTorch implementation) is used between GMM posteriors as targets and the network outputs. The data paths set as defaults  can be changed in the training script. The results are saved under `./logs` with the latest timestamp. **Notes** - BatchNorm, mean-centering input image,  Adam optimizer, fixed bilinear upsampler layer. 
 
