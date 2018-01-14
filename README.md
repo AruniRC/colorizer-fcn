@@ -23,13 +23,21 @@ TODO
 
 #### Sorted colorful images from ImageNet
 
-It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this colorfulness.
+It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this colorfulness. We can clearly see the increase in desaturated images in the later image montages below.
 
 1-100 |   1k-100  | 10k-100  | 100k-100 | 200k-100 |
 :----:|:---------:|:--------:|:--------:|:--------:
 ![](figures/montage-1-100.jpg)|  ![](figures/montage-1k-100.jpg) | ![](figures/montage-10k-100.jpg) | ![](figures/montage-100k-100.jpg) | ![](figures/montage-200k-100.jpg)
 
-Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet filenames, sorted by their RGB variance. The resultant text file should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
+Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet training set filenames, sorted by their RGB variance. The resultant text file, `files-rgbvar.txt` should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
+
+We can select a subset of these to train the network using shell commands, e.g.
+
+    START=1000
+    END=100100
+    sed -n "${START},${END}p" files-rgbvar.txt > files-rgbvar-$START-$END.txt
+
+
 
 
 ### Experiments
