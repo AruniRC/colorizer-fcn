@@ -25,11 +25,11 @@ import models
 
 
 
-data_root = '/vis/home/arunirc/data1/datasets/ImageNet/images/'
-exp_folder = osp.join('logs', 'sorted-rgbvar-imagenet')
+data_root = '/srv/data1/arunirc/datasets/ImageNet/images'
+exp_folder = osp.join('logs', 'sorted-rgbvar-imagenet-val')
 method = 'rgbvar'
 batch_sz = 128
-
+split = 'val'
 
 
 
@@ -38,7 +38,7 @@ def main():
 
     # sort all ImageNet images based on "bright" colors: var(r,g,b)
     if not osp.exists(exp_folder):
-        sort_bright_images()
+        sort_bright_images(split)
    
     print batch_sz
 
@@ -89,6 +89,9 @@ def main():
         for i in tqdm.trange(100):
             im = PIL.Image.open(sorted_filenames[i+10000])
             im.save(osp.join(exp_folder, '10k-100', str(i)+'.jpg'))
+
+    if split=='val':
+        return # // HACK
 
     # 100k
     if not osp.exists(osp.join(exp_folder, '100k-100')):
@@ -172,7 +175,7 @@ def main():
 
 
 
-def sort_bright_images():
+def sort_bright_images(split='train'):
     if not osp.exists(exp_folder):
         os.makedirs(exp_folder)
 
@@ -180,7 +183,7 @@ def sort_bright_images():
                 transforms.Scale((256, 256)),
                 transforms.ToTensor()])
 
-    datadir = osp.join(data_root, 'train')
+    datadir = osp.join(data_root, split)
 
     dataset = datasets.ImageFolder(datadir, transform)
     data_loader = torch.utils.data.DataLoader(
