@@ -24,11 +24,12 @@ here = osp.dirname(osp.abspath(__file__))
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--exp_name', default='fcn32s_color')
     parser.add_argument('-g', '--gpu', type=int, required=True)
     parser.add_argument('-c', '--config', type=int, default=1,
                         choices=configurations.keys())
     parser.add_argument('-b', '--binning', default='soft', 
-                        choices=('soft','one-hot'))
+                        choices=('soft', 'one-hot', 'uniform'))
     parser.add_argument('-k', '--numbins', type=int, default=32)
     parser.add_argument('-d', '--dataset_path', 
                         default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
@@ -36,11 +37,20 @@ def main():
     parser.add_argument('--resume', help='Checkpoint path')
     args = parser.parse_args()
 
+
+    # -----------------------------------------------------------------------------
+    # 0. setup
+    # -----------------------------------------------------------------------------
     gpu = args.gpu
     cfg = configurations[args.config]
-    cfg.update({'bin_type':args.binning,'numbins':args.numbins})
-    out = get_log_dir('fcn32s_color', args.config, cfg, verbose=False)
+    cfg.update({'bin_type':args.binning,'numbins':args.numbins})    
     resume = args.resume
+    if resume:
+        import pdb; pdb.set_trace()  # breakpoint 4b55d89d //
+
+        out, _ = osp.split(resume)
+    else:
+        out = get_log_dir(args.exp_name, args.config, cfg, verbose=False)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu)
     cuda = torch.cuda.is_available()
@@ -55,7 +65,7 @@ def main():
     # -----------------------------------------------------------------------------
     # 1. dataset
     # -----------------------------------------------------------------------------
-    # root = osp.expanduser('~/data/datasets')
+    # Custom dataset class defined in `data_loader.ColorizeImageNet`
     root = args.dataset_path
     kwargs = {'num_workers': 4, 'pin_memory': True} if cuda else {}
     
@@ -84,22 +94,26 @@ def main():
         im_size = cfg['im_size']
     else:
         im_size = (256, 256)
+    if 'batch_size' in cfg.keys():
+        batch_size = cfg['batch_size']
+    else:
+        batch_size = 1
 
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
-        data_loader.ColorizeImageNet(root, split='train', 
+        data_loader.ColorizeImageNet( root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=train_set, img_lowpass=img_lowpass, im_size=im_size,
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
-        batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
+        gmm_path=gmm_path, mean_l_path=mean_l_path ),
+        batch_size=batch_size, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
-        data_loader.ColorizeImageNet(root, split='val', 
+        data_loader.ColorizeImageNet( root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=val_set, img_lowpass=img_lowpass, im_size=im_size,
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
+        gmm_path=gmm_path, mean_l_path=mean_l_path ),
         batch_size=1, shuffle=False, **kwargs)
 
 
@@ -151,7 +165,7 @@ def main():
     # -----------------------------------------------------------------------------
     # Sanity-check: forward pass with a single sample
     # -----------------------------------------------------------------------------
-    DEBUG = True
+    DEBUG = False
     if DEBUG:
         dataiter = iter(val_loader)
         img, label = dataiter.next()

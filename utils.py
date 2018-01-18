@@ -21,7 +21,11 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
+# -----------------------------------------------------------------------------
 def plot_log_csv(log_path):
+# -----------------------------------------------------------------------------
+
+    assert osp.exists(log_path), 'Incorrect log-file path'
     log_dir, _ = osp.split(log_path)
     dat = np.genfromtxt(log_path, names=True, 
                         delimiter=',', autostrip=True)

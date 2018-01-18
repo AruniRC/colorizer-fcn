@@ -124,7 +124,7 @@ class FCN32sColor(nn.Module):
                                               bias=False)
             self.upscore_hue.weight.requires_grad = False
             self.upscore_chroma.weight.requires_grad = False
-        elif bin_type == 'soft':
+        elif bin_type == 'soft' or bin_type == 'uniform':
             self.score_fr = nn.Conv2d(4096, n_class, 1)
             self.upscore = nn.ConvTranspose2d(n_class, n_class, 64, stride=32,
                                               bias=False)            
@@ -234,7 +234,7 @@ class FCN32sColor(nn.Module):
             h_chroma = h_chroma[:, :, 19:19 + x.size()[2], 19:19 + x.size()[3]].contiguous()
             h = (h_hue, h_chroma)
 
-        elif self.bin_type == 'soft':
+        elif self.bin_type == 'soft' or self.bin_type == 'uniform':
             h = self.score_fr(h)
             h = self.upscore(h)
             h = h[:, :, 19:19 + x.size()[2], 19:19 + x.size()[3]].contiguous()
@@ -375,7 +375,7 @@ class FCN16sColor(nn.Module):
         if bin_type == 'one-hot':
             # NOTE: *two* output prediction maps for hue and chroma
             raise NotImplementedError('TODO - FCN 16s for separate hue-chroma')
-        elif bin_type == 'soft':
+        elif bin_type == 'soft' or bin_type == 'uniform':
             self.score_fr = nn.Conv2d(4096, n_class, 1)
             self.score_pool4 = nn.Conv2d(512, n_class, 1)
 
@@ -479,7 +479,7 @@ class FCN16sColor(nn.Module):
 
         if self.bin_type == 'one-hot':
             raise NotImplementedError('TODO - FCN 16s for separate hue-chroma')
-        elif self.bin_type == 'soft':
+        elif self.bin_type == 'soft' or self.bin_type == 'uniform':
             h = self.score_fr(h)
             h = self.upscore2(h)
             upscore2 = h  # 1/16
@@ -601,7 +601,7 @@ class FCN8sColor(nn.Module):
         if bin_type == 'one-hot':
             # NOTE: *two* output prediction maps for hue and chroma
             raise NotImplementedError('TODO - FCN 16s for separate hue-chroma')
-        elif bin_type == 'soft':
+        elif bin_type == 'soft' or bin_type == 'uniform':
             self.score_fr = nn.Conv2d(4096, n_class, 1)
             self.score_pool3 = nn.Conv2d(256, n_class, 1)
             self.score_pool4 = nn.Conv2d(512, n_class, 1)
@@ -711,7 +711,7 @@ class FCN8sColor(nn.Module):
 
         if self.bin_type == 'one-hot':
             raise NotImplementedError('TODO - FCN 16s for separate hue-chroma')
-        elif self.bin_type == 'soft':
+        elif self.bin_type == 'soft' or self.bin_type == 'uniform':
             h = self.score_fr(h)
             h = self.upscore2(h)
             upscore2 = h  # 1/16

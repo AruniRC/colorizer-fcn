@@ -157,7 +157,8 @@ class Trainer(object):
                 val_loss += float(loss.data[0]) / len(data)
                 del loss_hue, loss_chroma
 
-            elif self.train_loader.dataset.bins == 'soft':
+            elif self.train_loader.dataset.bins == 'soft' \
+                or self.train_loader.dataset.bins == 'uniform':
                 if self.cuda:
                     data, target = data.cuda(), target.cuda()
                 data, target = Variable(data), Variable(target)
@@ -166,6 +167,9 @@ class Trainer(object):
                 if np.isnan(float(loss.data[0])):
                     raise ValueError('loss is NaN while validation')
                 val_loss += float(loss.data[0]) / len(data)
+
+            else:
+                raise ValueError('Bins can be one-hot, soft or uniform')
 
             # Visualization
             imgs = data.data.cpu()
@@ -176,7 +180,8 @@ class Trainer(object):
                 lbl_true = target_hue.data.cpu()
                 del score_hue, target_hue, score_chroma, target_chroma
 
-            elif self.train_loader.dataset.bins == 'soft':
+            elif self.train_loader.dataset.bins == 'soft' \
+                or self.train_loader.dataset.bins == 'uniform':
                 lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
                 _, lbl_true = target.data.max(dim=3) # EDIT - .data
                 lbl_true = lbl_true.cpu()
@@ -211,6 +216,9 @@ class Trainer(object):
                                 mean_l=self.val_loader.dataset.mean_l)                    
                         visualizations.append(viz)
                 del target, score
+
+            else:
+                raise ValueError('Bins can be one-hot, soft or uniform')
 
 
             lbl_pred = lbl_pred.squeeze()
@@ -315,7 +323,8 @@ class Trainer(object):
                 loss = loss_chroma + loss_hue # TODO - handle unstable hue
                 
 
-            elif self.train_loader.dataset.bins == 'soft':
+            elif self.train_loader.dataset.bins == 'soft' \
+                or self.train_loader.dataset.bins == 'uniform':
                 # soft targets as GMM posteriors over Hue/Chroma jointly
                 if self.cuda:
                     data, target = data.cuda(), target.cuda()
@@ -324,6 +333,8 @@ class Trainer(object):
                 loss = kl_div2d(score, target, size_average=self.size_average)
                 if np.isnan(float(loss.data[0])):
                     raise ValueError('loss is NaN while training')
+            else:
+                raise ValueError('Bins can be one-hot, soft or uniform')
             # print list(self.model.parameters())[0].grad
 
             # SGD
@@ -336,10 +347,13 @@ class Trainer(object):
                 metrics = self.eval_metric(score_hue.data, target_hue.data, n_class)
                 del score_hue, target_hue, target
                 del loss_chroma, loss_hue, score_chroma, target_chroma
-            elif self.train_loader.dataset.bins == 'soft':
+            elif self.train_loader.dataset.bins == 'soft' \
+                or self.train_loader.dataset.bins == 'uniform':
                  _, target_label = target.max(dim=3)
                  metrics = self.eval_metric(score.data, target_label.data, n_class)
                  del target, score, target_label, data # free memory
+            else:
+                raise ValueError('Bins can be one-hot, soft or uniform')
 
             # Logging
             with open(osp.join(self.out, 'log.csv'), 'a') as f:

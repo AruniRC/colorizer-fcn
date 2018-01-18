@@ -296,7 +296,7 @@ configurations = {
         lr=1.0e-6,  
         momentum=0.9,          # not used (Adam)
         weight_decay=0.0005,   # not used (Adam)
-        interval_validate=50,
+        interval_validate=100,
         optim='Adam',
         img_lowpass=4,
         im_size=(256,256),
@@ -304,21 +304,72 @@ configurations = {
         val_set='small',
     ),
 
-    # validated - doesn't work!!!
-    26: dict(
-        max_iteration=3e+5,
-        lr=1.0e-5,  
+    # # validated - doesn't work!!!
+    # 26: dict(
+    #     max_iteration=3e+5,
+    #     lr=1.0e-5,  
+    #     momentum=0.9,          # not used (Adam)
+    #     weight_decay=0.0005,   # not used (Adam)
+    #     interval_validate=50,
+    #     optim='Adam',
+    #     img_lowpass=4,
+    #     im_size=(256,256),
+    #     train_set='full',
+    #     val_set='small',
+    #     gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346/gmm.pkl',
+    #     mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346//mean_l.npy',
+    # ),
+
+    # curriculum learning - brighter colors stage-1
+    27: dict(
+        max_iteration=1e+5,
+        lr=1.0e-6,  
         momentum=0.9,          # not used (Adam)
         weight_decay=0.0005,   # not used (Adam)
-        interval_validate=50,
+        interval_validate=100,
         optim='Adam',
         img_lowpass=4,
         im_size=(256,256),
-        train_set='full',
+        train_set='bright-1',
         val_set='small',
-        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346/gmm.pkl',
-        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-025_TIME-20180112-153346//mean_l.npy',
+        batch_size=3,
+        gmm_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-027_TIME-20180114-190049/gmm.pkl',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-027_TIME-20180114-190049/mean_l.npy',
     ),
+
+    # TODO uniform bins GMM + brighter colors stage-1
+    28: dict(
+        max_iteration=1e+5,
+        lr=1.0e-6,  
+        momentum=0.9,          # not used (Adam)
+        weight_decay=0.0005,   # not used (Adam)
+        interval_validate=100,
+        optim='Adam',
+        img_lowpass=4,
+        im_size=(256,256),
+        train_set='bright-1',
+        val_set='small',
+        batch_size=2
+    ),
+
+    # TODO uniform bins GMM + brighter colors stage-1
+    # check if different learning rate helps!
+    29: dict(
+        max_iteration=1e+5,
+        lr=1.0e-7,  
+        momentum=0.9,          # not used (Adam)
+        weight_decay=0.0005,   # not used (Adam)
+        interval_validate=100,
+        optim='Adam',
+        img_lowpass=4,
+        im_size=(256,256),
+        train_set='bright-1',
+        val_set='small',
+        batch_size=2
+    ),
+
+
+
 }
 
 

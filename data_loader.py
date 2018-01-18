@@ -104,15 +104,25 @@ class ColorizeImageNet(data.Dataset):
         self.gmm = []  # cached to disk, re-loaded if existing
         self.img_lowpass = img_lowpass
 
+
+        # -----------------------------------------------------------------------------
+        #   Dataset type
+        # -----------------------------------------------------------------------------
         if set == 'small':
             # A toy dataset of 100k samples for rapid prototyping
             files_list = osp.join(root, 'files_100k_'+split+'.txt')
+
         elif set == 'tiny':
             # DEBUG: 9 val set images
             files_list = osp.join(root, 'tiny_val.txt')
+
         elif set == 'full':
             # read in entire ImageNet dataset filenames
             files_list = osp.join(root, 'files_'+split+'.txt')
+
+        elif set == 'bright-1':
+            # use 100k subset of more brightly-colored images 
+            files_list = osp.join(root, 'files-rgbvar-'+split+'-1000-101000.txt')
 
         assert osp.exists(files_list), 'File does not exist: %s' % files_list
         imfn = []
@@ -122,6 +132,23 @@ class ColorizeImageNet(data.Dataset):
         self.files[split] =  imfn
 
 
+        # -----------------------------------------------------------------------------
+        # Load or calculate the image mean color
+        # -----------------------------------------------------------------------------
+        if not mean_l_path:
+            mean_l_path = osp.join(self.log_dir, 'mean_l.npy')
+            
+        if osp.exists(mean_l_path):
+            print 'Loading mean lightness value from cache'
+            self.mean_l = np.load(mean_l_path)
+        else:
+            self.mean_l = np.mean(self.get_color_samples(channels='lightness'))
+            np.save(mean_l_path, self.mean_l)
+
+
+        # -----------------------------------------------------------------------------
+        #   Binning type
+        # -----------------------------------------------------------------------------
         if self.bins=='soft':
             # estimate GMM on joint Hue and Chroma values
             #   1. sample data points (num_images*pixel_subset)
@@ -132,10 +159,9 @@ class ColorizeImageNet(data.Dataset):
             if osp.exists(gmm_path):
                 print 'Loading GMM parameters from cache'
                 self.gmm = joblib.load(gmm_path)
-
             else:
                 color_samples = self.get_color_samples(num_images=5000, pixel_subset=20)
-                gmm = GaussianMixture(n_components=num_hc_bins,
+                gmm = GaussianMixture(n_components=self.num_hc_bins,
                                       covariance_type='full', init_params='kmeans',
                                       random_state=0, verbose=1)
                 gmm.fit(color_samples)
@@ -143,14 +169,42 @@ class ColorizeImageNet(data.Dataset):
                 joblib.dump(gmm, gmm_path)
                 print 'done GMM fitting'
 
-        if not mean_l_path:
-            mean_l_path = osp.join(self.log_dir, 'mean_l.npy')
-        if osp.exists(mean_l_path):
-            print 'Loading mean lightness value from cache'
-            self.mean_l = np.load(mean_l_path)
-        else:
-            self.mean_l = np.mean(self.get_color_samples(channels='lightness'))
-            np.save(mean_l_path, self.mean_l)
+        elif self.bins=='one-hot':
+            # separate 1-d bins for Hue and Chroma
+            self.hc_bins = np.linspace(0,1,num=self.num_hc_bins) 
+
+        elif self.bins=='uniform':
+            # 2-D Hue/Chroma bins uniform in [0..1]
+            # http://scikit-image.org/docs/dev/auto_examples/color_exposure/plot_tinting_grayscale_images.html
+            num = np.round(np.sqrt(self.num_hc_bins)).astype(np.int)
+            xv, yv = np.meshgrid(np.linspace(0,1,num=num), 
+                                 np.linspace(0,1,num=num))
+            self.hc_bins = np.stack((xv.ravel(), yv.ravel()), axis=1)
+
+            assert(self.num_hc_bins == self.hc_bins.shape[0], 
+                   'The number of bins must be a perfect square in `Uniform bins`')
+
+            wt_init = np.full(self.num_hc_bins, 1. / self.num_hc_bins)
+            covar_init = np.ones(self.num_hc_bins) # TODO - provide as argument
+
+
+
+            # Create a dummy GMM to get soft predictions
+            gmm = GaussianMixture(n_components=self.num_hc_bins,
+                                    covariance_type='spherical',
+                                    weights_init=wt_init, 
+                                    means_init=self.hc_bins, 
+                                    precisions_init=1./covar_init)
+            gmm.means_ = self.hc_bins
+            gmm.weights_ = wt_init
+            gmm.covariances_ = covar_init
+            # NOTE: `precisions_cholesky_` tricks GMM into predicting without fit()
+            from sklearn.mixture.gaussian_mixture import _compute_precision_cholesky  
+            gmm.precisions_cholesky_ = _compute_precision_cholesky(
+                                        gmm.covariances_, gmm.covariance_type)
+            self.gmm = gmm
+        
+
 
 
     # -----------------------------------------------------------------------------
@@ -200,9 +254,10 @@ class ColorizeImageNet(data.Dataset):
         if self.bins == 'one-hot':
             h_label = self.make_label_map(h) # 1 x H x W
             c_label = self.make_label_map(c)
-            hc_label = (torch.from_numpy(h_label).long(), \
+            hc_label = (torch.from_numpy(h_label).long(),
                         torch.from_numpy(c_label).long())
-        elif self.bins == 'soft':
+
+        elif self.bins == 'soft' or self.bins == 'uniform':
             hc_label = torch.from_numpy(self.make_soft_bin_map(h, c)).float()
             # assert hc_label.shape == (L.shape[0], L.shape[1], self.num_hc_bins)
 
@@ -215,6 +270,7 @@ class ColorizeImageNet(data.Dataset):
     # -----------------------------------------------------------------------------
     def make_label_map(self, im_hc):
     # -----------------------------------------------------------------------------
+        # ground truth for one-hot bins
         hc_label = np.digitize(im_hc, self.hc_bins, right=False)
         hc_label = hc_label.astype(np.int32) - 1 # index 0 .. hc_bins-1
         assert np.min(hc_label)>=0, 'Negative label value.'
@@ -226,7 +282,7 @@ class ColorizeImageNet(data.Dataset):
     # -----------------------------------------------------------------------------
         hc_samples = np.stack( (im_h.flatten(), im_c.flatten()), axis=1 )
         gmm_posteriors = self.gmm.predict_proba(hc_samples)        
-        bin_map = gmm_posteriors.reshape( \
+        bin_map = gmm_posteriors.reshape(
                     (im_h.shape[0], im_h.shape[1], self.num_hc_bins) )
         return bin_map
 
