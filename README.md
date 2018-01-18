@@ -85,9 +85,9 @@ Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; 
     -  Curriculum learning - using subset "bright-1" of colorful imagery - FCN32s-stage1 :cyclone:
 
 Current experiments list:
-[ ] GMM targets, standard training imagery :cyclone:
-[ ] GMM targets, colorful training imagery :cyclone:
-[ ] Uniform bin targets, colorful training imagery :wrench:
+- [ ] GMM targets, standard training imagery :cyclone:
+- [ ] GMM targets, colorful training imagery :cyclone:
+- [ ] Uniform bin targets, colorful training imagery :wrench:
 
 ---
 
