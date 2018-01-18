@@ -74,18 +74,18 @@ We can select a subset of these to train the network using shell commands, e.g.
 
 ### Experiments
 
-Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; :white_check_mark: - completed.
+Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; :white_check_mark: - completed, :black_square_button: - paused.
 
-List of training variations:
+Implementing training variations:
 * Target labels for estimating Hue and Chroma jointly
-    - GMM - FCN32s :cyclone:, ...
+    - GMM soft bins :white_check_mark:
     - uniform binning - c.v. sigma :wrench:, voronoi regions :o:
 * Training imagery
-    -  100k randomly sampled from ImageNet train set - FCN32s-stage1 :cyclone:
-    -  Curriculum learning - using subset "bright-1" of colorful imagery - FCN32s-stage1 :cyclone:
+    -  100k randomly sampled from ImageNet train set :white_check_mark:
+    -  Curriculum learning - using subset "bright-1" of colorful imagery :white_check_mark:
 
 Current experiments **TODO** -list:
-- GMM targets, standard training imagery :cyclone:
+- GMM targets, standard training imagery :black_square_button:
 - GMM targets, colorful training imagery :cyclone:
 - Uniform bin targets, colorful training imagery :wrench:
 
