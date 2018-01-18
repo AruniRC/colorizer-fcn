@@ -3,18 +3,22 @@
 Learning to colorize grayscale images using the FCN segmentation architecture. 
 A lot of this code is based off a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn . 
 
+:construction: **Under construction** :construction:
+
 
 ### Installation
 
-Install PyTorch and TorchVision in an Anaconda environment then install the dependencies (using conda) from the `environment.yml` file.
-
-For 1080 GPUs, use: `conda install pytorch torchvision cuda80 -c soumith`.
-This addresses the massive slowdown in executing `model.cuda()`.
+* Install ![Anaconda](https://conda.io/docs/user-guide/install/linux.html) if not already installed in the system.
+* Create an Anaconda environment: `conda create -n resnet-face python=2.7` 
+* Install PyTorch and TorchVision inside the Anaconda environment. 
+    * First add a channel to conda: `conda config --add channels soumith`. 
+    * Then install: `conda install pytorch torchvision cuda80 -c soumith`.
+* Install the dependencies using conda: `conda install scipy Pillow tqdm scikit-learn scikit-image numpy matplotlib ipython pyyaml`
 
 
 ### Data setup
 
-The ImageNet ILSVRC2012 train and val images need to be downloaded and extracted into the folder structure shown below:
+The ![ImageNet](http://www.image-net.org/index) ILSVRC2012 train and val images need to be downloaded and extracted into "train" and "val" folders, similar to the folder structure shown below:
 
         Folder structure:
             .../ImageNet/images/
@@ -35,7 +39,7 @@ Each ImageNet image is transformed into the HSV colorspace, then to H, L and C (
 
 ### Usage
 
-The general code layour is described below. Specific examples of usage for a particular experiment will follow in subsequent sections of this readme.
+The general code layout is described below. Specific examples of usage for a particular experiment will follow in subsequent sections of this readme.
 
 * Experimental settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail inside the Python script).
 * The evaluation metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. 
@@ -43,13 +47,12 @@ The general code layour is described below. Specific examples of usage for a par
 * Intermediate colorization results on a subset of 9 validation images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
 
 
-
 #### Sorted colorful images from ImageNet
-
+:construction:
 It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this "colorfulness". We can clearly see the increase in desaturated images in the later image montages below.
 
 1-100 |   1k-100  | 10k-100  | 100k-100 | 200k-100 |
-:----:|:---------:|:--------:|:--------:|:--------:
+:----:|:---------:|:--------:|:--------:|:---------:
 ![](figures/montage-1-100.jpg)|  ![](figures/montage-1k-100.jpg) | ![](figures/montage-10k-100.jpg) | ![](figures/montage-100k-100.jpg) | ![](figures/montage-200k-100.jpg)
 
 Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet training set filenames, sorted by their RGB variance. The resultant text file, `files-rgbvar.txt` should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
@@ -62,10 +65,29 @@ We can select a subset of these to train the network using shell commands, e.g.
 
 **NOTE:** these lists should already be available from the `lists` sub-folder in this code repo.
 
+
+#### Training
+:construction:
+
+---
+
+
 ### Experiments
 
-#### 
+Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; :white_check_mark: - completed.
 
+**TODO** list of training variations:
+* Target labels for estimating Hue and Chroma jointly
+    - GMM - FCN32s :cyclone:, ...
+    - uniform binning - c.v. sigma :wrench:, voronoi regions :o:
+* Training imagery
+    -  100k randomly sampled from ImageNet train set - FCN32s-stage1 :cyclone:
+    -  Curriculum learning - using subset "bright-1" of colorful imagery - FCN32s-stage1 :cyclone:
+
+Current experiments list:
+[ ] GMM targets, standard training imagery :cyclone:
+[ ] GMM targets, colorful training imagery :cyclone:
+[ ] Uniform bin targets, colorful training imagery :wrench:
 
 ---
 
