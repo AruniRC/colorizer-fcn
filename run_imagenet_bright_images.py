@@ -24,9 +24,10 @@ import data_loader
 import models
 
 
-
-data_root = '/srv/data1/arunirc/datasets/ImageNet/images'
-exp_folder = osp.join('logs', 'sorted-rgbvar-imagenet-val')
+# User defined settings
+# data_root = '/srv/data1/arunirc/datasets/ImageNet/images'
+data_root = '/srv/data1/arunirc/temp-val'
+exp_folder = osp.join('logs', 'sorted-rgbvar-imagenet-val') # make sure to suffix 'train' or 'val'
 method = 'rgbvar'
 batch_sz = 128
 split = 'val'
@@ -65,6 +66,10 @@ def main():
     plt.savefig(osp.join(exp_folder, 'sorted_values.png'), bbox_inches='tight')
 
 
+
+# -----------------------------------------------------------------------------
+def viz_colorful_images_montage(exp_folder, sorted_filenames, split):
+# -----------------------------------------------------------------------------
     # first 100
     if not osp.exists(osp.join(exp_folder, 'first-100')):
         os.makedirs(osp.join(exp_folder, 'first-100'))
@@ -175,7 +180,9 @@ def main():
 
 
 
+# -----------------------------------------------------------------------------
 def sort_bright_images(split='train'):
+# -----------------------------------------------------------------------------
     if not osp.exists(exp_folder):
         os.makedirs(exp_folder)
 
@@ -183,7 +190,10 @@ def sort_bright_images(split='train'):
                 transforms.Scale((256, 256)),
                 transforms.ToTensor()])
 
-    datadir = osp.join(data_root, split)
+    if split=='train':
+        datadir = osp.join(data_root, split)
+    else:
+        datadir = data_root
 
     dataset = datasets.ImageFolder(datadir, transform)
     data_loader = torch.utils.data.DataLoader(
