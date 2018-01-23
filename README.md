@@ -1,24 +1,59 @@
 ## Colorize FCN
 
 Learning to colorize grayscale images using the FCN segmentation architecture. 
-A lot of this code is based off a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn . 
+This codebase is adapted from a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn . The colorization approach is inspired by recent work on using colorization as self-supervision in deep networks: https://github.com/gustavla/autocolorize and http://richzhang.github.io/colorization/ .
 
 :construction: **Under construction** :construction:
 
 
+### Status summary
+
+Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; :white_check_mark: - completed, :black_square_button: - paused.
+
+Implementing training variations:
+* Target labels for estimating Hue and Chroma jointly
+    - GMM soft bins :white_check_mark:
+    - uniform binning :white_check_mark: 
+* Training imagery
+    -  100k randomly sampled from ImageNet train set :white_check_mark:
+    -  Curriculum learning - using subset "bright-1" of colorful imagery :white_check_mark:
+
+Experiments list:
+- GMM targets, standard training imagery :black_square_button:
+- GMM targets, colorful training imagery :black_square_button:
+- Uniform bin targets, random training imagery (baseline) :o:
+- Uniform bin targets, colorful training imagery :wrench:
+    + FCN32s :white_check_mark: --> FCN16s :white_check_mark: --> FCN8s :cyclone:
+    + 
+
+
 ### Installation
 
-* Install ![Anaconda](https://conda.io/docs/user-guide/install/linux.html) if not already installed in the system.
-* Create an Anaconda environment: `conda create -n resnet-face python=2.7` 
+* Install [Anaconda](https://conda.io/docs/user-guide/install/linux.html) if not already installed in the system.
+* Create an Anaconda environment: `conda create -n color-fcn python=2.7` 
 * Install PyTorch and TorchVision inside the Anaconda environment. 
     * First add a channel to conda: `conda config --add channels soumith`. 
     * Then install: `conda install pytorch torchvision cuda80 -c soumith`.
 * Install the dependencies using conda: `conda install scipy Pillow tqdm scikit-learn scikit-image numpy matplotlib ipython pyyaml`
+* Activate the conda environment and run all experiments within it: `source ativate color-fcn`
 
+
+### Usage
+
+The general code layout is described below. Specific examples of usage for a particular experiment will follow in subsequent sections of this readme.
+
+* Experimental settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail inside the Python script).
+* The evaluation metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. 
+* The plots for training and validation loss and mean IoU can be generated fby running the following command at the terminal: `python -c "from utils import plot_log_csv; plot_log_csv('$LOG_FILE')"`, where LOG_FILE is the path to the CSV file.
+* Intermediate colorization results on a subset of 9 validation images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
+
+---
 
 ### Data setup
 
-The ![ImageNet](http://www.image-net.org/index) ILSVRC2012 train and val images need to be downloaded and extracted into "train" and "val" folders, similar to the folder structure shown below:
+#### ImageNet for colorization
+
+The [ImageNet](http://www.image-net.org/index) ILSVRC2012 train and val images need to be downloaded and extracted into "train" and "val" folders, similar to the folder structure shown below:
 
         Folder structure:
             .../ImageNet/images/
@@ -34,30 +69,20 @@ The ![ImageNet](http://www.image-net.org/index) ILSVRC2012 train and val images 
 
 The txt files are available from ![colorizer-fcn/lists](lists). 
 
-Each ImageNet image is transformed into the HSV colorspace, then to H, L and C (chroma), following the colorization method at https://github.com/gustavla/autocolorize. Note that no class-label information is used. This is done "under the hood" in the class defined in `data_loader.py`.
+Each ImageNet image is transformed into the HSV colorspace, then to H, L and C (chroma), following the colorization method at https://github.com/gustavla/autocolorize. This is done "under the hood" in the class defined in `data_loader.py`. NOTE: no class-label information is used.
 
 
-### Usage
-
-The general code layout is described below. Specific examples of usage for a particular experiment will follow in subsequent sections of this readme.
-
-* Experimental settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail inside the Python script).
-* The evaluation metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. 
-* The plots for training and validation loss and mean IoU can be generated by running `python -c "from utils import plot_log_csv; plot_log_csv('$LOG_FILE')"`, where LOG_FILE is the path to the CSV file.
-* Intermediate colorization results on a subset of 9 validation images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
-
-
-#### Sorted colorful images from ImageNet
+#### Colorful images from ImageNet
 :construction:
-It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages. We use the variance of RGB channels in an image as a proxy for measuring this "colorfulness". We can clearly see the increase in desaturated images in the later image montages below.
+It may be easier for the network to train on more "colorful" images from ImageNet in the initial stages, as a form of *curriculum learning*. We use the average variance of RGB channels in an image as a proxy for measuring this "colorfulness". We can clearly see the increase in desaturated images in the later image montages below.
 
 1-100 |   1k-100  | 10k-100  | 100k-100 | 200k-100 |
 :----:|:---------:|:--------:|:--------:|:---------:
 ![](figures/montage-1-100.jpg)|  ![](figures/montage-1k-100.jpg) | ![](figures/montage-10k-100.jpg) | ![](figures/montage-100k-100.jpg) | ![](figures/montage-200k-100.jpg)
 
-Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet training set filenames, sorted by their RGB variance. The resultant text file, `files-rgbvar.txt` should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
+Use `run_imagenet_bright_images.py`, after suitably modifying the paths specified in the script, to generate a list of ImageNet training set filenames, sorted by their *RGB variance*. The resultant text file, `files-rgbvar.txt` should be copied into the same folder as the ImageNet dataset 'train' and 'val' folders.
 
-We can select a subset of these to train the network using shell commands, e.g.
+We can select a subset of these sorted images (1000-th to 100,1000-th) to train the network using shell commands, e.g.
 
     START=1000
     END=100100
@@ -69,25 +94,10 @@ We can select a subset of these to train the network using shell commands, e.g.
 #### Training
 :construction:
 
----
+NOTE: The -W flag is useful in disabling the multitude of warnings that pollute the console output (`python -W ignore`).
 
+* 
 
-### Experiments
-
-Status guide -- :cyclone: - running code; :wrench: - working on it; :o: - todo; :white_check_mark: - completed, :black_square_button: - paused.
-
-Implementing training variations:
-* Target labels for estimating Hue and Chroma jointly
-    - GMM soft bins :white_check_mark:
-    - uniform binning - c.v. sigma :wrench:, voronoi regions :o:
-* Training imagery
-    -  100k randomly sampled from ImageNet train set :white_check_mark:
-    -  Curriculum learning - using subset "bright-1" of colorful imagery :white_check_mark:
-
-Current experiments **TODO** -list:
-- GMM targets, standard training imagery :black_square_button:
-- GMM targets, colorful training imagery :cyclone:
-- Uniform bin targets, colorful training imagery :wrench:
 
 ---
 

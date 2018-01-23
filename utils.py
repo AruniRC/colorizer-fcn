@@ -91,16 +91,8 @@ def plot_log_csv(log_path):
 
     plt.savefig(osp.join(log_dir, 'log_plots.png'), bbox_inches='tight')
 
-
-def smooth(y, box_pts):
-	# https://stackoverflow.com/a/26337730/297353
-    box = np.ones(box_pts)/box_pts
-    y_smooth = np.convolve(y, box, mode='same')
-    y_smooth[0] = y_smooth[1]
-    y_smooth[-1] = y_smooth[-2]
-    return y_smooth
-
 def savgol_smooth(y, box_pts):
+    # use the Savitzky-Golay filter for 1-D smoothing
     if box_pts % 2 == 0:
         box_pts += 1
     y_smooth = scipy.signal.savgol_filter(y, box_pts, 2)
