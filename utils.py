@@ -19,6 +19,7 @@ import os.path as osp
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+import scipy.signal
 
 
 # -----------------------------------------------------------------------------
@@ -54,6 +55,8 @@ def plot_log_csv(log_path):
 
     plt.subplot(2, 2, 1)
     plt.plot(iter_train_mean_iu, train_mean_iu, label='train')
+    box_pts = np.rint(np.sqrt(len(train_mean_iu))).astype(np.int)
+    plt.plot(iter_train_mean_iu, savgol_smooth(train_mean_iu, box_pts))
     plt.ylabel('mean IoU')
     plt.grid()
     plt.legend()
@@ -61,12 +64,16 @@ def plot_log_csv(log_path):
 
     plt.subplot(2, 2, 2)
     plt.plot(iter_mean_iu, mean_iu, label='val')
+    box_pts = np.rint(np.sqrt(len(mean_iu))).astype(np.int)
+    plt.plot(iter_mean_iu, savgol_smooth(mean_iu, box_pts))
     plt.grid()
     plt.legend()
     plt.tight_layout()
 
     plt.subplot(2, 2, 3)
     plt.plot(iter_train_loss, train_loss, label='train')
+    box_pts = np.rint(np.sqrt(len(train_loss))).astype(np.int)
+    plt.plot(iter_train_loss, savgol_smooth(train_loss, box_pts))
     plt.xlabel('iteration')
     plt.ylabel('loss')
     plt.grid()
@@ -75,6 +82,8 @@ def plot_log_csv(log_path):
 
     plt.subplot(2, 2, 4)
     plt.plot(iter_val_loss, val_loss, label='val')
+    box_pts = np.rint(np.sqrt(len(val_loss))).astype(np.int)
+    plt.plot(iter_val_loss, savgol_smooth(val_loss, box_pts))
     plt.xlabel('iteration')
     plt.grid()
     plt.legend()
@@ -82,25 +91,25 @@ def plot_log_csv(log_path):
 
     plt.savefig(osp.join(log_dir, 'log_plots.png'), bbox_inches='tight')
 
-    # f = plt.figure()
-    # plt.plot(iter_mean_iu, mean_iu, label='val')
-    # plt.xlabel('iteration')
-    # plt.ylabel('mean IoU')
-    # plt.grid()
-    # plt.legend()
-    # plt.savefig(osp.join(log_dir, 'val_mean_iou.png'), bbox_inches='tight')
 
-    # f = plt.figure()
-    # plt.plot(iter_val_loss, val_loss, label='val')
-    # plt.xlabel('iteration')
-    # plt.ylabel('KLdiv loss')
-    # plt.grid()
-    # plt.legend()
-    # plt.savefig(osp.join(log_dir, 'val_loss.png'), bbox_inches='tight')
+def smooth(y, box_pts):
+	# https://stackoverflow.com/a/26337730/297353
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    y_smooth[0] = y_smooth[1]
+    y_smooth[-1] = y_smooth[-2]
+    return y_smooth
 
+def savgol_smooth(y, box_pts):
+    if box_pts % 2 == 0:
+        box_pts += 1
+    y_smooth = scipy.signal.savgol_filter(y, box_pts, 2)
+    return y_smooth
 
 
+# -----------------------------------------------------------------------------
 def colorize_image_hc(labels, img, gmm, mean_l, method='mean'):
+# -----------------------------------------------------------------------------
     '''
         Colorizes a grayscale image given the colorizer network 
         predictions for joint Hue/Chroma cluster centroids. 
@@ -133,10 +142,8 @@ def colorize_image_hc(labels, img, gmm, mean_l, method='mean'):
     '''
     labels = labels.astype(gmm.means_.dtype)
     img = img.astype(gmm.means_.dtype)
-
-    
     hc_means = gmm.means_.astype(labels.dtype)
-
+    
     if method == 'mean':
         # expectation over GMM centroids
         im_hc = np.tensordot(labels, hc_means, (2,0))
@@ -175,8 +182,6 @@ def _hue_chroma_to_rgb(im_hc, im_l):
     return im_rgb
 
 
-
-
 def _fast_hist(label_true, label_pred, n_class):
     mask = (label_true >= 0) & (label_true < n_class)
     hist = np.bincount(
@@ -185,7 +190,10 @@ def _fast_hist(label_true, label_pred, n_class):
     return hist
 
 
+
+# -----------------------------------------------------------------------------
 def label_accuracy_score(label_trues, label_preds, n_class):
+# -----------------------------------------------------------------------------
     """Returns accuracy score evaluation result.
 
       - overall accuracy
@@ -207,8 +215,10 @@ def label_accuracy_score(label_trues, label_preds, n_class):
 
 
 
+# -----------------------------------------------------------------------------
 def visualize_segmentation(lbl_pred, lbl_true, img, im_l, \
     n_class, viz_type='avg'):
+# -----------------------------------------------------------------------------
     '''
         Returns a visualization of predictions and ground-truth labels
         [rgb_img, true_labels | grayscale_img, pred_labels]
@@ -245,7 +255,10 @@ def visualize_segmentation(lbl_pred, lbl_true, img, im_l, \
     return skimage.img_as_ubyte(tiled_img)
 
 
+
+# -----------------------------------------------------------------------------
 def visualize_colorization(lbl_pred, lbl_true, img_orig, im_l, gmm, mean_l):
+# -----------------------------------------------------------------------------
     '''
         Returns a visualization of predictions and ground-truth labels
         [rgb_img, true_labels | grayscale_img, pred_labels]
