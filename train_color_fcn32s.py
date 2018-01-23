@@ -30,7 +30,7 @@ def main():
                         choices=configurations.keys())
     parser.add_argument('-b', '--binning', default='soft', 
                         choices=('soft', 'one-hot', 'uniform'))
-    parser.add_argument('-k', '--numbins', type=int, default=32)
+    parser.add_argument('-k', '--numbins', type=int, default=128)
     parser.add_argument('-d', '--dataset_path', 
                         default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
     parser.add_argument('-m', '--model_path', default=None)
@@ -46,8 +46,6 @@ def main():
     cfg.update({'bin_type':args.binning,'numbins':args.numbins})    
     resume = args.resume
     if resume:
-        import pdb; pdb.set_trace()  # breakpoint 4b55d89d //
-
         out, _ = osp.split(resume)
     else:
         out = get_log_dir(args.exp_name, args.config, cfg, verbose=False)
@@ -98,6 +96,13 @@ def main():
         batch_size = cfg['batch_size']
     else:
         batch_size = 1
+    if 'uniform_sigma' in cfg.keys():
+        uniform_sigma = cfg['uniform_sigma']
+    else:
+        uniform_sigma = 'default'
+    if 'binning' in cfg.keys():
+        args.binning = cfg['binning']
+
 
     
     # DEBUG: set='tiny'
@@ -105,7 +110,7 @@ def main():
         data_loader.ColorizeImageNet( root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=train_set, img_lowpass=img_lowpass, im_size=im_size,
-        gmm_path=gmm_path, mean_l_path=mean_l_path ),
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=batch_size, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
@@ -113,7 +118,7 @@ def main():
         data_loader.ColorizeImageNet( root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=val_set, img_lowpass=img_lowpass, im_size=im_size,
-        gmm_path=gmm_path, mean_l_path=mean_l_path ),
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=1, shuffle=False, **kwargs)
 
 

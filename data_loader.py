@@ -11,6 +11,7 @@ from skimage.transform import rescale
 from skimage.transform import resize
 from skimage.filters import gaussian
 from sklearn.mixture import GaussianMixture
+from scipy.cluster.vq import vq
 from sklearn.externals import joblib
 import torch
 from torch.utils import data
@@ -70,9 +71,10 @@ class ColorizeImageNet(data.Dataset):
     '''
 
     # -----------------------------------------------------------------------------
-    def __init__(self, root, log_dir = '.', split='train', set='small',
-                             num_hc_bins=32, bins='one-hot', img_lowpass=None, 
-                             im_size=(256, 256), gmm_path=None, mean_l_path=None):
+    def __init__(self, root, log_dir = '.', split='train', set='small', 
+                    num_hc_bins=32, bins='one-hot', img_lowpass=None, 
+                    uniform_sigma='default', im_size=(256, 256), 
+                    gmm_path=None, mean_l_path=None):
     # -----------------------------------------------------------------------------
         '''
             Parameters
@@ -89,6 +91,8 @@ class ColorizeImageNet(data.Dataset):
                             in the network, instead of the usual log-loss.
             num_hc_bins -   Usually 32 for 'one-hot' and 64 for GMM clusters in 'soft'.
             img_lowpass -   Scalar downsampling factor on Hue and Chroma.
+            uniform_sigma - 
+            im_size     - 
             gmm_path,
             mean_l_path -   Optional. Paths to cached GMM and mean lightness value. 
         ''' 
@@ -103,6 +107,7 @@ class ColorizeImageNet(data.Dataset):
         self.set = set
         self.gmm = []  # cached to disk, re-loaded if existing
         self.img_lowpass = img_lowpass
+        self.uniform_sigma =  uniform_sigma # TODO - if `Uniform` bins, set kernel sigma
 
 
         # -----------------------------------------------------------------------------
@@ -180,13 +185,25 @@ class ColorizeImageNet(data.Dataset):
             xv, yv = np.meshgrid(np.linspace(0,1,num=num), 
                                  np.linspace(0,1,num=num))
             self.hc_bins = np.stack((xv.ravel(), yv.ravel()), axis=1)
-
-            assert(self.num_hc_bins == self.hc_bins.shape[0], 
-                   'The number of bins must be a perfect square in `Uniform bins`')
+            assert self.num_hc_bins == self.hc_bins.shape[0], \
+                'The number of bins must be a perfect square for Uniform binning'
 
             wt_init = np.full(self.num_hc_bins, 1. / self.num_hc_bins)
-            covar_init = np.ones(self.num_hc_bins) # TODO - provide as argument
+            
+            if self.uniform_sigma == 'default':
+                # set sigma of Gaussians to be radius of a bin's Voronoi region
+                bin_dist = np.abs(self.hc_bins[0][0] - self.hc_bins[1][0])
+                covar_init = (bin_dist/np.sqrt(2))**2 * np.ones(self.num_hc_bins)
 
+            elif self.uniform_sigma == 'learned':
+                # TODO - estimate standard dev (sigma) for each bin center
+                color_samples = self.get_color_samples(
+                                    num_images=5000, pixel_subset=20)
+                idx,_ = vq(color_samples, self.hc_bins)
+                raise NotImplementedError
+                
+            else:
+                raise NotImplementedError
 
 
             # Create a dummy GMM to get soft predictions
@@ -345,8 +362,8 @@ class ColorizeImageNet(data.Dataset):
             used learn a Gaussian Mixture Model. N = num_images*pixel_subset. 
             This method depends on having a 100k subset of train files from the
             ImageNet dataset available as a text-file (`files_small`).
-            Optional: can also be used to return Lightness samples (used to 
-            calculate the average image brightness for mean-subtraction).
+            *Optional:* can also be used to return Lightness (intensity) samples, 
+            used to calculate the average image brightness for mean-subtraction.
         '''
         if self.set == 'tiny':
             files_small = osp.join(self.root, 'tiny_val.txt')

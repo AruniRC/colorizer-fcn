@@ -23,8 +23,8 @@ def main():
     parser.add_argument('-c', '--config', type=int, default=15,
                         choices=configurations.keys())
     parser.add_argument('-b', '--binning', default='one-hot', 
-                        choices=('soft','one-hot'))
-    parser.add_argument('-k', '--numbins', type=int, default=16)
+                        choices=('soft','one-hot', 'uniform'))
+    parser.add_argument('-k', '--numbins', type=int, default=128)
     parser.add_argument('-d', '--dataset_path', 
                         default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
     parser.add_argument('-m', '--model_path', default=None)
@@ -33,7 +33,7 @@ def main():
 
     gpu = args.gpu
     # The config must specify path to pre-trained model as value for the 
-    # key 'fcn32s_pretrained_model'
+    # key 'fcn16s_pretrained_model'
     cfg = configurations[args.config] 
     cfg.update({'bin_type':args.binning,'numbins':args.numbins})
     out = get_log_dir('fcn8s_color', args.config, cfg, verbose=False)
@@ -45,7 +45,8 @@ def main():
     torch.manual_seed(1337)
     if cuda:
         torch.cuda.manual_seed(1337)
-        torch.backends.cudnn.enabled = True    
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True    
 
 
     # -----------------------------------------------------------------------------
@@ -76,21 +77,35 @@ def main():
         mean_l_path = cfg['mean_l_path']
     else:
         mean_l_path = None
+    if 'im_size' in cfg.keys():
+        im_size = cfg['im_size']
+    else:
+        im_size = (256, 256)
+    if 'batch_size' in cfg.keys():
+        batch_size = cfg['batch_size']
+    else:
+        batch_size = 1
+    if 'uniform_sigma' in cfg.keys():
+        uniform_sigma = cfg['uniform_sigma']
+    else:
+        uniform_sigma = 'default'
+    if 'binning' in cfg.keys():
+        args.binning = cfg['binning']
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=train_set, img_lowpass=img_lowpass, 
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
+        set=train_set, img_lowpass=img_lowpass, im_size=im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=5, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=val_set, img_lowpass=img_lowpass, 
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
+        set=val_set, img_lowpass=img_lowpass, im_size=im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=1, shuffle=False, **kwargs)
 
 

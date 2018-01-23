@@ -18,12 +18,13 @@ from train_color_fcn32s import get_log_dir
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--exp_name', default='fcn16s_color')
     parser.add_argument('-g', '--gpu', type=int, required=True)
     parser.add_argument('-c', '--config', type=int, default=15,
                         choices=configurations.keys())
     parser.add_argument('-b', '--binning', default='one-hot', 
-                        choices=('soft','one-hot'))
-    parser.add_argument('-k', '--numbins', type=int, default=16)
+                        choices=('soft','one-hot', 'uniform'))
+    parser.add_argument('-k', '--numbins', type=int, default=128)
     parser.add_argument('-d', '--dataset_path', 
                         default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
     parser.add_argument('-m', '--model_path', default=None)
@@ -44,7 +45,8 @@ def main():
     torch.manual_seed(1337)
     if cuda:
         torch.cuda.manual_seed(1337)
-        torch.backends.cudnn.enabled = True    
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
 
 
     # -----------------------------------------------------------------------------
@@ -66,7 +68,6 @@ def main():
         val_set = cfg['val_set']
     else:
         val_set = 'small'
-
     if 'gmm_path' in cfg.keys():
         gmm_path = cfg['gmm_path']
     else:
@@ -75,21 +76,36 @@ def main():
         mean_l_path = cfg['mean_l_path']
     else:
         mean_l_path = None
+    if 'im_size' in cfg.keys():
+        im_size = cfg['im_size']
+    else:
+        im_size = (256, 256)
+    if 'batch_size' in cfg.keys():
+        batch_size = cfg['batch_size']
+    else:
+        batch_size = 1
+    if 'uniform_sigma' in cfg.keys():
+        uniform_sigma = cfg['uniform_sigma']
+    else:
+        uniform_sigma = 'default'
+    if 'binning' in cfg.keys():
+        args.binning = cfg['binning']
+
     
     # DEBUG: set='tiny'
     train_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='train', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=train_set, img_lowpass=img_lowpass, 
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
+        set=train_set, img_lowpass=img_lowpass, im_size=im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=1, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
         data_loader.ColorizeImageNet(root, split='val', 
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
-        set=val_set, img_lowpass=img_lowpass, 
-        gmm_path=gmm_path, mean_l_path=mean_l_path),
+        set=val_set, img_lowpass=img_lowpass, im_size=im_size,
+        gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
         batch_size=1, shuffle=False, **kwargs)
 
 
@@ -101,19 +117,17 @@ def main():
     if args.model_path:
         checkpoint = torch.load(args.model_path)        
         model.load_state_dict(checkpoint['model_state_dict'])
-    else: 
-        if resume:
-            checkpoint = torch.load(resume)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            start_epoch = checkpoint['epoch']
-            start_iteration = checkpoint['iteration']
-        else:
-            fcn32s = models.FCN32sColor(n_class=args.numbins, bin_type=args.binning)
-            fcn32s.load_state_dict(torch.load(cfg['fcn32s_pretrained_model'])['model_state_dict'])
-            model.copy_params_from_fcn32s(fcn32s)
-
     start_epoch = 0
     start_iteration = 0
+    if resume:
+        checkpoint = torch.load(resume)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        start_epoch = checkpoint['epoch']
+        start_iteration = checkpoint['iteration']
+    else:
+        fcn32s = models.FCN32sColor(n_class=args.numbins, bin_type=args.binning)
+        fcn32s.load_state_dict(torch.load(cfg['fcn32s_pretrained_model'])['model_state_dict'])
+        model.copy_params_from_fcn32s(fcn32s)
 
     if cuda:
         model = model.cuda()
