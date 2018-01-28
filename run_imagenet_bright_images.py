@@ -24,6 +24,7 @@ import data_loader
 import models
 
 
+# -----------------------------------------------------------------------------
 # User defined settings
 # data_root = '/srv/data1/arunirc/datasets/ImageNet/images'
 data_root = '/srv/data1/arunirc/temp-val'
@@ -32,6 +33,10 @@ method = 'rgbvar'
 batch_sz = 128
 split = 'val'
 
+# NOTE: for 'val', I created a symlink to the imagenet/images/val folder, since  
+# the PyTorch data loader expects sub-folders and cannot handle a directory with 
+# images at the root level.
+# -----------------------------------------------------------------------------
 
 
 
@@ -42,11 +47,9 @@ def main():
         sort_bright_images(split)
    
     print batch_sz
-
     
     sorted_filenames = np.load(osp.join(exp_folder, 'files_sorted.npy'))
     sorted_vals = np.load(osp.join(exp_folder, 'values_sorted.npy'))
-
 
     # 
     splitter = lambda x: '/'.join(x.split('/')[-3:])
@@ -55,15 +58,17 @@ def main():
     np.savetxt(osp.join(exp_folder, 'files-rgbvar.txt'), 
                filenames_out, fmt='%s')
 
-
-
     # plot values
-    f = plt.figure()
-    plt.plot(sorted_vals)
-    plt.ylabel('var(r,g,b)')
-    plt.xlabel('sorted ImageNet images')
-    plt.tight_layout()
-    plt.savefig(osp.join(exp_folder, 'sorted_values.png'), bbox_inches='tight')
+    if not osp.exists(osp.join(exp_folder, 'sorted_values.png')):
+        f = plt.figure()
+        plt.plot(sorted_vals)
+        plt.ylabel('var(r,g,b)')
+        plt.xlabel('sorted ImageNet images')
+        plt.tight_layout()
+        plt.savefig(osp.join(exp_folder, 'sorted_values.png'), bbox_inches='tight')
+
+    # save 100 images at intervals of sorted colorful images
+    viz_colorful_images_montage(exp_folder, sorted_filenames, split)
 
 
 

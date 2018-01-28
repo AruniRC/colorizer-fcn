@@ -11,14 +11,16 @@ import matplotlib.pyplot as plt
 import torch
 from torch.autograd import Variable
 
-
+here = osp.dirname(osp.abspath(__file__))
+root_dir,_ = osp.split(here)
 import sys
-sys.path.append('/vis/home/arunirc/data1/Research/colorize-fcn/colorizer-fcn')
+sys.path.append(root_dir)
+
 import utils
 import data_loader
 
 
-root = '/vis/home/arunirc/data1/datasets/ImageNet/images/'
+data_root = '/vis/home/arunirc/data1/datasets/ImageNet/images/'
 out_path = '/data2/arunirc/Research/colorize-fcn/pytorch-fcn/tests/data_tests/'
 GMM_PATH = '/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-014_VCS-db517d6_TIME-20171230-212406/gmm.pkl'
 MEAN_L_PATH = '/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-014_VCS-db517d6_TIME-20171230-212406/mean_l.npy'
@@ -28,7 +30,7 @@ cuda = torch.cuda.is_available()
 
 def main():
     dataset = data_loader.ColorizeImageNet(
-                root, split='val', set='small',
+                data_root, split='val', set='small',
                 bins='soft', num_hc_bins=16,
                 gmm_path=GMM_PATH, mean_l_path=MEAN_L_PATH)
     img, labels = dataset.__getitem__(0)

@@ -1,7 +1,7 @@
 ## Colorize FCN
 
 Learning to colorize grayscale images using the FCN segmentation architecture. 
-This codebase is adapted from a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn . The colorization approach is inspired by recent work on using colorization as self-supervision in deep networks: https://github.com/gustavla/autocolorize and http://richzhang.github.io/colorization/ .
+This codebase is adapted from a PyTorch implementation of FCN for segmentation: https://github.com/wkentaro/pytorch-fcn . The colorization approach is inspired by recent work on using colorization as self-supervision in deep networks: https://github.com/gustavla/autocolorize and http://richzhang.github.io/colorization/ . 
 
 :construction: **Under construction** :construction:
 
@@ -26,6 +26,7 @@ Experiments list:
     + FCN32s :white_check_mark: --> FCN16s :white_check_mark: --> FCN8s :cyclone:
     + 
 
+---
 
 ### Installation
 
@@ -37,15 +38,6 @@ Experiments list:
 * Install the dependencies using conda: `conda install scipy Pillow tqdm scikit-learn scikit-image numpy matplotlib ipython pyyaml`
 * Activate the conda environment and run all experiments within it: `source ativate color-fcn`
 
-
-### Usage
-
-The general code layout is described below. Specific examples of usage for a particular experiment will follow in subsequent sections of this readme.
-
-* Experimental settings such as learning rates are defined in `config.py`, each setting being a key in a Python dict. Training FCN-32s is done first, using `train_color_fcn32s.py` and specifying a configuration number (the input args are explained in more detail inside the Python script).
-* The evaluation metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. 
-* The plots for training and validation loss and mean IoU can be generated fby running the following command at the terminal: `python -c "from utils import plot_log_csv; plot_log_csv('$LOG_FILE')"`, where LOG_FILE is the path to the CSV file.
-* Intermediate colorization results on a subset of 9 validation images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
 
 ---
 
@@ -71,6 +63,7 @@ The txt files are available from ![colorizer-fcn/lists](lists).
 
 Each ImageNet image is transformed into the HSV colorspace, then to H, L and C (chroma), following the colorization method at https://github.com/gustavla/autocolorize. This is done "under the hood" in the class defined in `data_loader.py`. NOTE: no class-label information is used.
 
+ We treat colorization as a *dense prediction* task: given the grayscale (or lightness) image as input, the network's goal is to predict the hue and chroma at each pixel position. Hue and chroma are continuous values -- we quantize them into 256 bins (16x16) and pose this as a classification problem (similar to previous work in colorization). The output of the network is a soft distribution over 256 bins, each bin corresponding to a color in Hue-Chroma space.
 
 #### Colorful images from ImageNet
 :construction:
@@ -91,13 +84,22 @@ We can select a subset of these sorted images (1000-th to 100,1000-th) to train 
 **NOTE:** these lists should already be available from the `lists` sub-folder in this code repo.
 
 
-#### Training
+### Training
 :construction:
 
-NOTE: The -W flag is useful in disabling the multitude of warnings that pollute the console output (`python -W ignore`).
+NOTE: The -W flag is useful in disabling the multitude of warnings that can fill up the console output (`python -W ignore`).
 
-* 
+* Experimental settings such as learning rates are defined in [config.py](./config.py), each setting being a key in a Python dict. 
+* Training FCN-32s is done first, using [train_color_fcn32s.py](./train_color_fcn32s.py) and specifying a configuration number (the input args are explained in more detail inside the Python script).
+* The evaluation metrics are updated in a log file saved under `logs/MODEL-folder/log.csv`. 
+* The plots for training and validation loss and mean IoU can be generated fby running the following command at the terminal: `python -c "from utils import plot_log_csv; plot_log_csv('$LOG_FILE')"`, where LOG_FILE is the path to the CSV file.
+* Intermediate colorization results on a subset of 9 validation images are saved as a PNG image every 50 iterations by default, under `logs/MODEL-folder/visualization_viz`. 
+* A saved network can be used to generate colorizations using the script [tests/vis_prediction.py](./tests/vis_prediction.py)
 
+
+### Demo
+
+A working demo script is at `demo_colorize.py`. 
 
 ---
 
