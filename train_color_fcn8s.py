@@ -22,12 +22,14 @@ def main():
     parser.add_argument('-g', '--gpu', type=int, required=True)
     parser.add_argument('-c', '--config', type=int, default=15,
                         choices=configurations.keys())
-    parser.add_argument('-b', '--binning', default='one-hot', 
+    parser.add_argument('-b', '--binning', default='uniform', 
                         choices=('soft','one-hot', 'uniform'))
     parser.add_argument('-k', '--numbins', type=int, default=128)
     parser.add_argument('-d', '--dataset_path', 
                         default='/vis/home/arunirc/data1/datasets/ImageNet/images/')
     parser.add_argument('-m', '--model_path', default=None)
+    parser.add_argument('--data_par', action='store_true', default=False, 
+                        help='Use DataParallel for multi-gpu training')
     parser.add_argument('--resume', help='Checkpoint path')
     args = parser.parse_args()
 
@@ -98,7 +100,7 @@ def main():
         bins=args.binning, log_dir=out, num_hc_bins=args.numbins, 
         set=train_set, img_lowpass=img_lowpass, im_size=im_size,
         gmm_path=gmm_path, mean_l_path=mean_l_path, uniform_sigma=uniform_sigma ),
-        batch_size=5, shuffle=True, **kwargs) # DEBUG: set shuffle False
+        batch_size=24, shuffle=True, **kwargs) # DEBUG: set shuffle False
 
     # DEBUG: set='tiny'
     val_loader = torch.utils.data.DataLoader(
@@ -119,6 +121,7 @@ def main():
         model.load_state_dict(checkpoint['model_state_dict'])
     else: 
         if resume:
+            # HACK: takes very long ... better to start a new expt with init from `args.model_path`
             checkpoint = torch.load(resume)
             model.load_state_dict(checkpoint['model_state_dict'])
             start_epoch = checkpoint['epoch']
@@ -133,7 +136,10 @@ def main():
 
     if cuda:
         model = model.cuda()
-        # model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3, 4]).cuda()
+
+    if args.data_par:    
+        raise NotImplementedError    
+        # model = torch.nn.DataParallel(model, device_ids=[1, 2, 3, 4, 5, 6])
 
 
     # -----------------------------------------------------------------------------

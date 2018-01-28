@@ -697,6 +697,9 @@ class FCN8sColor(nn.Module):
             h = self.relu5_3(self.conv5_3(h))
         h = self.pool5(h)
 
+
+
+        # -------------------------------------------------
         if self.batch_norm:
             h = self.relu6(self.fc6_bn(self.fc6(h)))
         else:

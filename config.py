@@ -391,7 +391,24 @@ configurations = {
         fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-029_TIME-20180122-151135/model_best.pth.tar',
     ),
 
-
+    # XXXXXX Loss fluctuating!
+    # python -W ignore train_color_fcn8s.py -c 31 -k 256 -b uniform -m <best-model-from-prev-config>
+    31: dict(
+        max_iteration=1e+5,
+        lr=1.0e-7,        # CHANGE: lower the learning  rate
+        momentum=0.9,          # not used (Adam)
+        weight_decay=0.0005,   
+        interval_validate=100,
+        optim='Adam',
+        img_lowpass=4,      # keep same spatial blurring
+        im_size=(256,256),
+        train_set='bright-1',
+        val_set='small',
+        batch_size=4,
+        binning='uniform',
+        mean_l_path='/home/erdos/arunirc/data1/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn32s_color_CFG-028_TIME-20180118-180822/mean_l.npy',
+        fcn16s_pretrained_model='/srv/data1/arunirc/Research/colorize-fcn/colorizer-fcn/logs/MODEL-fcn16s_color_CFG-029_TIME-20180122-151135/model_best.pth.tar',
+    ),
     
 
 }

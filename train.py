@@ -114,6 +114,7 @@ class Trainer(object):
         self.iteration = 0
         self.max_iter = max_iter
         self.best_mean_iu = 0
+        self.best_val_loss = 0
 
 
     # -----------------------------------------------------------------------------
@@ -141,7 +142,7 @@ class Trainer(object):
                     data, target_hue, target_chroma = \
                         data.cuda(), target_hue.cuda(), target_chroma.cuda()
                 data, target_hue, target_chroma = \
-                    Variable(data), Variable(target_hue), Variable(target_chroma)
+                    Variable(data, volatile=True), Variable(target_hue, volatile=True), Variable(target_chroma, volatile=True)
                 (score_hue, score_chroma) = self.model(data)
 
                 loss_hue = cross_entropy2d(score_hue, target_hue,
@@ -252,20 +253,23 @@ class Trainer(object):
             log = map(str, log)
             f.write(','.join(log) + '\n')
 
-        del label_trues, label_preds, val_loss
+        del label_trues, label_preds
         gc.collect()
 
         mean_iu = metrics[2]
-        is_best = mean_iu > self.best_mean_iu
+
+        # TODO - save best model based on Validation **Loss**
+        is_best = val_loss > self.best_val_loss
         if is_best:
-            self.best_mean_iu = mean_iu
+            self.best_val_loss = val_loss
         torch.save({
             'epoch': self.epoch,
             'iteration': self.iteration,
             'arch': self.model.__class__.__name__,
             'optim_state_dict': self.optim.state_dict(),
             'model_state_dict': self.model.state_dict(),
-            'best_mean_iu': self.best_mean_iu,
+            'best_mean_iu': None,
+            'best_val_loss': self.best_val_loss, # changed
         }, osp.join(self.out, 'checkpoint.pth.tar'))
         if is_best:
             shutil.copy(osp.join(self.out, 'checkpoint.pth.tar'),
